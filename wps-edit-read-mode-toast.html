@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>有错别字的日常文案 · Toast 提示版</title>
+  <style>
+    :root {
+      --blue: #417ff4;
+      --blue-deep: #2d6ae8;
+      --text: #1a1a1a;
+      --sub: #888888;
+      --line: #e8e8e8;
+      --read-bg: #e8eaed;
+      --sheet-bg: #f5f5f5;
+      --blue-soft: #e8f0ff;
+      --font: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: var(--font);
+      background: #1a1a1a;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+    }
+
+    .phone {
+      width: min(390px, 100%);
+      height: min(844px, 96vh);
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* —— 顶栏（两种模式共用） —— */
+    .topbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 8px 6px 8px 2px;
+      border-bottom: 1px solid var(--line);
+      gap: 6px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .icon-btn:active {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .icon-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .title {
+      flex: 1;
+      text-align: center;
+      font-size: 16px;
+      font-weight: 600;
+      margin: 0;
+      padding: 0 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    /* —— 副工具栏 —— */
+    .subbar {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 6px 10px 8px;
+      border-bottom: 1px solid var(--line);
+      gap: 8px;
+    }
+
+    .wps-logo {
+      width: 28px;
+      height: 28px;
+      background: linear-gradient(145deg, #5b9dff, var(--blue-deep));
+      border-radius: 6px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 6px rgba(65, 127, 244, 0.35);
+    }
+
+    .subbar-spacer {
+      flex: 1;
+    }
+
+    .icon-muted {
+      color: #c5c5c5;
+    }
+
+    .avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e0e0e0, #bdbdbd);
+      flex-shrink: 0;
+    }
+
+    .subbar-undo {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .read-mode .subbar-undo {
+      display: none;
+    }
+
+    /* —— 原型：Toast 样式切换（对比挑选用） —— */
+    .proto-toast-switch {
+      position: absolute;
+      top: 46px;
+      right: 8px;
+      z-index: 55;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--sub);
+    }
+
+    .proto-toast-switch span {
+      display: none;
+    }
+
+    @media (min-width: 340px) {
+      .proto-toast-switch span {
+        display: inline;
+      }
+    }
+
+    .proto-toast-switch button {
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      background: rgba(255, 255, 255, 0.95);
+      font-size: 10px;
+      cursor: pointer;
+      font-family: inherit;
+      color: #333;
+    }
+
+    .proto-toast-switch button.on {
+      border-color: var(--blue);
+      color: var(--blue);
+      font-weight: 600;
+    }
+
+    /* —— Toast（进入阅读模式后出现） —— */
+    .toast-root {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      z-index: 45;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.28s ease, transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .toast-root.visible {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    .toast-root.read-pos {
+      bottom: 200px;
+    }
+
+    .toast-panel {
+      border-radius: 14px;
+      padding: 14px 14px 12px 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+      border: 1px solid rgba(0, 0, 0, 0.06);
+      background: #fff;
+    }
+
+    #app.toast-style-snackbar .toast-panel {
+      border-radius: 10px;
+      padding: 12px 14px;
+      background: rgba(45, 45, 45, 0.94);
+      border: none;
+      color: #f2f2f2;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+    }
+
+    .toast-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .toast-title {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    #app.toast-style-snackbar .toast-title {
+      color: #fff;
+      font-weight: 500;
+      font-size: 13px;
+    }
+
+    .toast-dismiss {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border: none;
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: var(--sub);
+      font-size: 18px;
+      line-height: 1;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    #app.toast-style-snackbar .toast-dismiss {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ddd;
+    }
+
+    .toast-line {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.55;
+      color: #555;
+    }
+
+    #app.toast-style-snackbar .toast-line {
+      color: rgba(255, 255, 255, 0.88);
+    }
+
+    .toast-line .n {
+      font-weight: 700;
+      color: #c97800;
+    }
+
+    #app.toast-style-snackbar .toast-line .n {
+      color: #ffd54f;
+    }
+
+    .btn-inline-proof {
+      border: none;
+      background: none;
+      font: inherit;
+      font-size: inherit;
+      font-weight: 700;
+      color: var(--blue);
+      cursor: pointer;
+      padding: 0;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    #app.toast-style-snackbar .btn-inline-proof {
+      color: #9ecbff;
+      text-decoration: none;
+    }
+
+    .toast-card-block {
+      display: block;
+    }
+
+    .toast-snack-block {
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #app.toast-style-snackbar .toast-card-block {
+      display: none;
+    }
+
+    #app.toast-style-snackbar .toast-snack-block {
+      display: flex;
+    }
+
+    .toast-snack-block .toast-line {
+      flex: 1;
+      min-width: 0;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .toast-snack-block .btn-toast-proof {
+      flex-shrink: 0;
+    }
+
+    .toast-snack-block .toast-dismiss {
+      flex-shrink: 0;
+    }
+
+    .toast-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .btn-toast-proof {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: none;
+      background: var(--blue);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-toast-later {
+      padding: 8px 12px;
+      border: none;
+      background: transparent;
+      color: var(--sub);
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    #app.toast-style-snackbar .btn-toast-later {
+      display: none;
+    }
+
+    /* —— 正文区 —— */
+    .doc-wrap {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .edit-mode .doc-wrap {
+      background: #fff;
+    }
+
+    .read-mode .doc-wrap {
+      background: var(--read-bg);
+    }
+
+    .doc-scroll {
+      flex: 1;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 16px 18px 12px;
+    }
+
+    .read-mode .doc-scroll {
+      padding: 14px 14px 8px;
+    }
+
+    .paper {
+      background: #fff;
+      border-radius: 2px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+      padding: 20px 18px 48px;
+      min-height: 200px;
+      position: relative;
+    }
+
+    .edit-mode .paper {
+      box-shadow: none;
+      border-radius: 0;
+      padding: 0 4px 40px;
+    }
+
+    .doc-body {
+      font-size: 16px;
+      line-height: 1.85;
+      color: var(--text);
+      margin: 0;
+    }
+
+    .edit-mode .doc-body {
+      outline: none;
+      min-height: 280px;
+    }
+
+    .page-badge {
+      display: none;
+      position: absolute;
+      left: 12px;
+      bottom: 14px;
+      font-size: 12px;
+      color: var(--sub);
+      background: #f0f0f0;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .read-mode .page-badge {
+      display: block;
+    }
+
+    .brand-foot {
+      text-align: center;
+      font-size: 11px;
+      color: #bbb;
+      padding: 10px 8px 6px;
+      border-top: 1px solid var(--line);
+      margin-top: 8px;
+    }
+
+    .read-mode .brand-foot {
+      border-top-color: #ddd;
+    }
+
+    /* —— 编辑底栏 —— */
+    .toolbar-edit {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      padding: 6px 8px 8px;
+      padding-bottom: calc(8px + env(safe-area-inset-bottom, 0));
+      border-top: 1px solid var(--line);
+      background: #fafafa;
+      gap: 4px;
+    }
+
+    .read-mode .toolbar-edit {
+      display: none;
+    }
+
+    .btn-save-done {
+      width: 44px;
+      height: 44px;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      color: var(--blue);
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+
+    .btn-save-done:active {
+      background: rgba(65, 127, 244, 0.12);
+    }
+
+    .btn-save-done svg {
+      width: 28px;
+      height: 28px;
+      stroke-width: 2.8;
+    }
+
+    .tb-divider {
+      width: 1px;
+      height: 28px;
+      background: #ddd;
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .tb-icon {
+      flex: 1;
+      min-width: 0;
+      height: 44px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #444;
+    }
+
+    .tb-icon:active {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .tb-icon svg {
+      width: 24px;
+      height: 24px;
+    }
+
+    .tb-icon.tb-a-gradient {
+      font-size: 20px;
+      font-weight: 800;
+      font-style: italic;
+      background: linear-gradient(120deg, #ff6b9d, #c471ed, #12c2e9);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+
+    .tb-chevron {
+      flex-shrink: 0;
+      width: 36px;
+      color: var(--sub);
+    }
+
+    /* —— 阅读底栏 + FAB —— */
+    .read-bottom-wrap {
+      display: none;
+      flex-direction: column;
+      flex-shrink: 0;
+      background: #fff;
+      border-top: 1px solid var(--line);
+    }
+
+    .read-mode .read-bottom-wrap {
+      display: flex;
+    }
+
+    .fab-row {
+      display: flex;
+      justify-content: center;
+      gap: 28px;
+      padding: 10px 0 6px;
+    }
+
+    .fab {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12);
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      color: #555;
+    }
+
+    .fab:active {
+      transform: scale(0.96);
+    }
+
+    .fab svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .toolbar-read {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      padding: 8px 12px 10px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0));
+      gap: 4px;
+    }
+
+    .tr-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 4px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      font-size: 11px;
+      color: #333;
+      font-family: inherit;
+    }
+
+    .tr-item:active {
+      opacity: 0.75;
+    }
+
+    .tr-item svg {
+      width: 26px;
+      height: 26px;
+      color: #444;
+    }
+
+    .android-nav {
+      display: flex;
+      height: 46px;
+      align-items: center;
+      justify-content: space-around;
+      background: #f5f5f5;
+      border-top: 1px solid #e5e5e5;
+    }
+
+    .android-nav button {
+      width: 48px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: #444;
+    }
+
+    /* —— 半窗校对 —— */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 60;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet {
+      height: 50%;
+      min-height: 280px;
+      max-height: 82%;
+      background: var(--sheet-bg);
+      border-radius: 16px 16px 0 0;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+    }
+
+    .overlay.open .sheet {
+      transform: translateY(0);
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: #ccc;
+      border-radius: 2px;
+      margin: 8px auto 4px;
+    }
+
+    .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 44px 10px;
+      position: relative;
+    }
+
+    .sheet-head h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .sheet-close {
+      position: absolute;
+      right: 6px;
+      top: 0;
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      color: var(--sub);
+    }
+
+    .sheet-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 12px 8px;
+    }
+
+    .pill {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .pill-blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pill-gray {
+      background: #e5e5e5;
+      color: #555;
+    }
+
+    .sheet-link {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--blue);
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .sheet-cards {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 12px 16px;
+    }
+
+    .p-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      border: 1px solid #e8e8e8;
+    }
+
+    .p-card.active {
+      border-color: var(--blue);
+    }
+
+    .p-card-top {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .p-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--blue);
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .p-body {
+      font-size: 14px;
+      color: var(--sub);
+      margin-bottom: 8px;
+    }
+
+    .p-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .p-btn {
+      padding: 6px 16px;
+      border-radius: 18px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .p-btn-ignore {
+      background: #ececec;
+      color: #555;
+    }
+
+    .p-btn-fix {
+      background: var(--blue);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone edit-mode" id="app">
+    <header class="topbar">
+      <button type="button" class="icon-btn" aria-label="返回">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+      </button>
+      <h1 class="title">有错别字的日常文案</h1>
+      <div class="top-actions">
+        <button type="button" class="icon-btn" aria-label="更多">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+        </button>
+        <button type="button" class="icon-btn" aria-label="完成">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4" fill="currentColor"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="subbar">
+      <span class="wps-logo" aria-hidden="true"></span>
+      <div class="subbar-undo">
+        <button type="button" class="icon-btn icon-muted" aria-label="撤销" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        </button>
+        <button type="button" class="icon-btn icon-muted" aria-label="重做" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+        </button>
+      </div>
+      <div class="subbar-spacer"></div>
+      <span class="avatar" aria-hidden="true"></span>
+      <button type="button" class="icon-btn" aria-label="分享">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8M16 6l-4-4-4 4M12 2v13"/></svg>
+      </button>
+      <button type="button" class="icon-btn" aria-label="菜单">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+
+    <div class="proto-toast-switch" title="原型演示：切换两种 Toast 外观">
+      <span>Toast</span>
+      <button type="button" id="btnToastCard" class="on">卡片</button>
+      <button type="button" id="btnToastSnack">条</button>
+    </div>
+
+    <div id="toastRoot" class="toast-root read-pos" role="status" aria-live="polite" aria-atomic="true">
+      <div class="toast-panel">
+        <div class="toast-card-block">
+          <div class="toast-head">
+            <p class="toast-title">已保存并进入阅读模式</p>
+            <button type="button" class="toast-dismiss" id="toastDismissCard" aria-label="关闭">×</button>
+          </div>
+          <p class="toast-line">
+            当前文档发现 <span class="n toast-err-n">9</span> 处错误，前往
+            <button type="button" class="btn-inline-proof js-open-proof">校对</button>
+            处理
+          </p>
+          <div class="toast-actions">
+            <button type="button" class="btn-toast-later" id="toastLater">稍后再说</button>
+            <button type="button" class="btn-toast-proof js-open-proof" id="toastProofCard">校对</button>
+          </div>
+        </div>
+        <div class="toast-snack-block">
+          <p class="toast-line">
+            当前文档发现 <span class="n toast-err-n">9</span> 处错误，前往
+            <button type="button" class="btn-inline-proof js-open-proof">校对</button>
+            处理
+          </p>
+          <button type="button" class="toast-dismiss" id="toastDismissSnack" aria-label="关闭">×</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="doc-wrap">
+      <div class="doc-scroll">
+        <div class="paper">
+          <div class="doc-body" id="docBody" contenteditable="true" spellcheck="false">
+            这是一段有错别字的日常文案。今天天气真不错，阳光洒在窗台上，泡一杯热茶，读几页喜欢的书，感觉整个人都放松下来了。<br /><br />
+            下午打算整理一下书桌，把散落的便签归类，顺便给绿植浇浇水。生活不需要时刻高效，偶尔慢下来，才能听见自己的声音。<br /><br />
+            傍晚如果还有时间，想去附近公园走走，看看晚霞，吹吹风。简单的一天，也值得被认真记录。
+          </div>
+          <div class="page-badge">1</div>
+          <div class="brand-foot">金山文档 | WPS云文档</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar-edit">
+      <button type="button" class="btn-save-done" id="btnSaveRead" aria-label="保存并进入阅读模式">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg>
+      </button>
+      <span class="tb-divider"></span>
+      <button type="button" class="tb-icon tb-a-gradient" aria-label="AI 排版">A</button>
+      <button type="button" class="tb-icon" aria-label="字体"><span style="font-size:15px;font-weight:700;">Aa</span></button>
+      <button type="button" class="tb-icon" aria-label="段落">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h8"/></svg>
+      </button>
+      <button type="button" class="tb-icon" aria-label="插入">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></svg>
+      </button>
+      <button type="button" class="tb-icon" aria-label="批注">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="14" rx="2"/><path d="M8 22v-4h8"/></svg>
+      </button>
+      <button type="button" class="tb-icon" aria-label="键盘">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"/></svg>
+      </button>
+      <button type="button" class="tb-icon tb-chevron" aria-label="收起工具栏">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 15l-6-6-6 6"/></svg>
+      </button>
+    </div>
+
+    <div class="read-bottom-wrap">
+      <div class="fab-row">
+        <button type="button" class="fab" aria-label="分享">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12v8a2 2 0 0 0 2 2h12M16 5l-4-4-4 4"/></svg>
+        </button>
+        <button type="button" class="fab" aria-label="点赞">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+        </button>
+        <button type="button" class="fab" aria-label="收藏">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        </button>
+      </div>
+      <div class="toolbar-read">
+        <button type="button" class="tr-item" id="btnBackEdit">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          编辑
+        </button>
+        <button type="button" class="tr-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/></svg>
+          墨迹
+        </button>
+        <button type="button" class="tr-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+          连页
+        </button>
+        <button type="button" class="tr-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+          打印
+        </button>
+      </div>
+      <nav class="android-nav" aria-label="系统导航">
+        <button type="button" aria-label="多任务"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h2v12H8zM11 6h2v12h-2zM14 6h2v12h-2z"/></svg></button>
+        <button type="button" aria-label="主页"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="4" width="16" height="16" rx="3"/></svg></button>
+        <button type="button" aria-label="返回"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 6l-6 6 6 6"/></svg></button>
+      </nav>
+    </div>
+
+    <div class="overlay" id="overlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <h2 id="sheetTitle">中文校对</h2>
+          <button type="button" class="sheet-close" id="closeSheet" aria-label="关闭">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="sheet-filters">
+          <button type="button" class="pill pill-blue">
+            所有错误(<span id="sheetErrCount">9</span>)
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <button type="button" class="pill pill-gray">修改记录</button>
+          <button type="button" class="sheet-link">全部修正</button>
+        </div>
+        <div class="sheet-cards">
+          <div class="p-card active">
+            <div class="p-card-top">
+              <span>全半角检查</span>
+              <button type="button" class="p-link">修正同类错误</button>
+            </div>
+            <div class="p-body">半角「-」→ 全角「—」</div>
+            <div class="p-actions">
+              <button type="button" class="p-btn p-btn-ignore">忽略</button>
+              <button type="button" class="p-btn p-btn-fix">修正</button>
+            </div>
+          </div>
+          <div class="p-card">
+            <div class="p-card-top"><span>语序不当</span></div>
+            <div class="p-body">多元， → 多元</div>
+          </div>
+          <div class="p-card">
+            <div class="p-card-top"><span>成分残缺</span></div>
+            <div class="p-body">。 → 的称号。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var app = document.getElementById("app");
+      var docBody = document.getElementById("docBody");
+      var btnSave = document.getElementById("btnSaveRead");
+      var btnEdit = document.getElementById("btnBackEdit");
+      var overlay = document.getElementById("overlay");
+      var closeSheet = document.getElementById("closeSheet");
+      var toastRoot = document.getElementById("toastRoot");
+      var btnToastCard = document.getElementById("btnToastCard");
+      var btnToastSnack = document.getElementById("btnToastSnack");
+      var errCount = 9;
+      var toastHideTimer = null;
+      var toastVisibleMs = 14000;
+
+      function setErrNumbers() {
+        document.querySelectorAll(".toast-err-n").forEach(function (el) {
+          el.textContent = String(errCount);
+        });
+        document.getElementById("sheetErrCount").textContent = String(errCount);
+      }
+
+      function hideToast() {
+        toastRoot.classList.remove("visible");
+        if (toastHideTimer) {
+          clearTimeout(toastHideTimer);
+          toastHideTimer = null;
+        }
+      }
+
+      function showToast() {
+        hideToast();
+        toastRoot.classList.add("visible");
+        toastHideTimer = setTimeout(hideToast, toastVisibleMs);
+      }
+
+      function openProofSheet() {
+        hideToast();
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+      }
+
+      function setReadMode(on) {
+        if (on) {
+          try {
+            localStorage.setItem("wps_demo_doc_html", docBody.innerHTML);
+          } catch (e) {}
+          app.classList.remove("edit-mode");
+          app.classList.add("read-mode");
+          docBody.contentEditable = "false";
+        } else {
+          hideToast();
+          app.classList.remove("read-mode");
+          app.classList.add("edit-mode");
+          docBody.contentEditable = "true";
+        }
+      }
+
+      btnSave.addEventListener("click", function () {
+        setReadMode(true);
+        showToast();
+      });
+
+      btnEdit.addEventListener("click", function () {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+        setReadMode(false);
+      });
+
+      toastRoot.addEventListener("click", function (e) {
+        var t = e.target;
+        if (t && t.classList && t.classList.contains("js-open-proof")) {
+          e.preventDefault();
+          openProofSheet();
+        }
+      });
+
+      document.getElementById("toastDismissCard").addEventListener("click", hideToast);
+      document.getElementById("toastDismissSnack").addEventListener("click", hideToast);
+      document.getElementById("toastLater").addEventListener("click", hideToast);
+
+      btnToastCard.addEventListener("click", function () {
+        app.classList.remove("toast-style-snackbar");
+        btnToastCard.classList.add("on");
+        btnToastSnack.classList.remove("on");
+      });
+
+      btnToastSnack.addEventListener("click", function () {
+        app.classList.add("toast-style-snackbar");
+        btnToastSnack.classList.add("on");
+        btnToastCard.classList.remove("on");
+      });
+
+      closeSheet.addEventListener("click", function () {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+      });
+
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay) {
+          overlay.classList.remove("open");
+          overlay.setAttribute("aria-hidden", "true");
+        }
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && overlay.classList.contains("open")) {
+          overlay.classList.remove("open");
+          overlay.setAttribute("aria-hidden", "true");
+        }
+      });
+
+      setErrNumbers();
+    })();
+  </script>
+</body>
+</html>
