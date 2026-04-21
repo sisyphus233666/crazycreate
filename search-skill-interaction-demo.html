@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>搜索场景 · 技能分发交互 Demo（产品总监评审版）</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --border: #e8eaed;
+      --text: #1f2329;
+      --muted: #646a73;
+      --blue: #1677ff;
+      --blue-soft: #e8f3ff;
+      --highlight: #fff566;
+      --ai-start: #7c5cff;
+      --ai-mid: #3b82f6;
+      --ai-end: #f97316;
+      --radius: 10px;
+      --shadow: 0 8px 32px rgba(31, 35, 41, 0.12);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+    .page {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px 20px 48px;
+    }
+    h1 {
+      font-size: 1.35rem;
+      font-weight: 600;
+      margin: 0 0 8px;
+    }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 20px; }
+
+    /* Director evaluation */
+    .eval {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 3px rgba(0,0,0,.04);
+    }
+    .eval h2 {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin: 0 0 12px;
+      font-weight: 600;
+    }
+    .eval-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .eval-card {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      background: #fafbfc;
+    }
+    .eval-card.selected {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+    }
+    .eval-card h3 {
+      margin: 0 0 6px;
+      font-size: 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .badge {
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 999px;
+      background: var(--blue);
+      color: #fff;
+      font-weight: 600;
+    }
+    .eval-card p {
+      margin: 0;
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .criteria {
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--border);
+      font-size: 0.82rem;
+      color: var(--muted);
+    }
+    .criteria strong { color: var(--text); }
+
+    /* Demo switcher */
+    .demo-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .demo-tabs button {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--text);
+      transition: border-color .15s, background .15s;
+    }
+    .demo-tabs button:hover {
+      border-color: var(--blue);
+      color: var(--blue);
+    }
+    .demo-tabs button.active {
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 600;
+    }
+
+    /* Mock shell */
+    .shell {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      min-height: 420px;
+    }
+    .shell-top {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #fff 0%, #fafbfc 100%);
+    }
+    .logo {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    .search-pill {
+      flex: 1;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 0.88rem;
+      color: var(--muted);
+    }
+    .search-pill:focus { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .shell-body {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      min-height: 360px;
+    }
+    .sidebar {
+      border-right: 1px solid var(--border);
+      padding: 12px;
+      font-size: 0.8rem;
+      color: var(--muted);
+      background: #fafbfc;
+    }
+    .sidebar .btn-row { margin-bottom: 12px; }
+    .fake-btn {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      margin-right: 6px;
+    }
+    .fake-btn.primary { background: var(--blue); color: #fff; }
+    .fake-btn.ghost { border: 1px solid var(--border); background: #fff; }
+    .main-placeholder {
+      padding: 24px;
+      color: var(--muted);
+      font-size: 0.85rem;
+    }
+
+    /* Overlay modal */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(31, 35, 41, 0.45);
+      display: none;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 48px 16px;
+      z-index: 100;
+      overflow-y: auto;
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      width: 100%;
+      max-width: 720px;
+      background: var(--panel);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      overflow: hidden;
+      animation: pop .2s ease;
+    }
+    .modal.modal--wide {
+      max-width: 920px;
+    }
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-head {
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-search {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 12px;
+      background: #fff;
+    }
+    .modal-search input {
+      flex: 1;
+      border: none;
+      font-size: 0.95rem;
+      outline: none;
+    }
+    .modal-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 8px;
+      padding: 10px 16px 0;
+      font-size: 0.8rem;
+    }
+    .modal-tabs span {
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: default;
+      color: var(--muted);
+    }
+    .modal-tabs span.on {
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 600;
+    }
+    .modal-tools {
+      display: flex;
+      justify-content: flex-end;
+      padding: 0 16px 8px;
+    }
+    .sparkle-btn {
+      font-size: 0.78rem;
+      color: var(--blue);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .modal-body { padding: 0 16px 16px; max-height: 60vh; overflow-y: auto; }
+
+    /* Scheme A: smooth layouts — rail / collapsible stack */
+    .a-demo-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px 12px;
+      padding: 10px 0 12px;
+      margin-bottom: 4px;
+      border-bottom: 1px dashed var(--border);
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .a-demo-toolbar strong { color: var(--text); font-weight: 600; }
+    .seg {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .seg button {
+      border: none;
+      background: transparent;
+      padding: 6px 12px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      color: var(--muted);
+    }
+    .seg button.on {
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 600;
+    }
+
+    .a-layout {
+      display: grid;
+      gap: 14px;
+      align-items: start;
+    }
+    .a-layout.a-wide {
+      grid-template-columns: 1fr minmax(210px, 238px);
+    }
+    .a-layout.a-narrow {
+      grid-template-columns: 1fr;
+    }
+
+    .section-title {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: 12px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    .skill-strip {
+      display: flex;
+      gap: 10px;
+      overflow-x: auto;
+      padding-bottom: 6px;
+      margin-bottom: 4px;
+    }
+    .skill-card {
+      flex: 0 0 auto;
+      width: 200px;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: linear-gradient(135deg, #faf8ff 0%, #f0f7ff 50%, #fff8f0 100%);
+      cursor: pointer;
+      transition: transform .12s, box-shadow .12s;
+    }
+    .a-layout.a-wide .skill-card { width: 100%; }
+    .skill-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(22, 119, 255, 0.15);
+    }
+    .skill-card .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--ai-start), var(--ai-mid));
+      margin-bottom: 8px;
+    }
+    .skill-card strong { font-size: 0.88rem; display: block; margin-bottom: 4px; }
+    .skill-card span { font-size: 0.75rem; color: var(--muted); }
+
+    .skill-rail {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      background: linear-gradient(180deg, #fcfcff 0%, #fafbfc 100%);
+      position: sticky;
+      top: 0;
+    }
+    .skill-rail h4 {
+      margin: 0 0 10px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .skill-rail .rail-note {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin: -4px 0 10px;
+      line-height: 1.4;
+    }
+    .skill-rail .skill-card {
+      width: 100%;
+      margin-bottom: 10px;
+      padding: 10px;
+    }
+    .skill-rail .skill-card:last-child { margin-bottom: 0; }
+    .skill-rail .skill-card .icon {
+      width: 28px;
+      height: 28px;
+      margin-bottom: 6px;
+    }
+    .skill-rail .skill-card strong { font-size: 0.82rem; }
+    .skill-rail .skill-card span { font-size: 0.7rem; }
+
+    .skill-stack {
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+    }
+    .skill-stack-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 10px 12px;
+      background: #f7f8fa;
+      font-size: 0.82rem;
+    }
+    .skill-stack-bar .left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      color: var(--text);
+    }
+    .skill-stack-bar .muted { color: var(--muted); font-size: 0.76rem; }
+    .skill-stack-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .text-btn {
+      border: none;
+      background: transparent;
+      color: var(--blue);
+      font-size: 0.76rem;
+      cursor: pointer;
+      padding: 4px 6px;
+      border-radius: 4px;
+    }
+    .text-btn:hover { background: var(--blue-soft); }
+    .text-btn.danger { color: var(--muted); }
+    .text-btn.danger:hover { color: var(--text); background: #f0f0f0; }
+    .skill-stack-body {
+      padding: 12px;
+      border-top: 1px solid var(--border);
+      background: #fff;
+    }
+    .skill-stack.is-collapsed .skill-stack-body { display: none; }
+    .skill-stack.is-collapsed .toggle-chevron { transform: rotate(-90deg); }
+    .toggle-chevron {
+      display: inline-block;
+      transition: transform 0.2s ease;
+      font-size: 0.7rem;
+      color: var(--muted);
+    }
+
+    .result-group { margin-top: 8px; }
+    .result-head {
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    .result-row {
+      display: grid;
+      grid-template-columns: 36px 1fr auto;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 8px;
+      border-radius: 8px;
+      border: 1px solid transparent;
+      cursor: default;
+    }
+    .result-row:hover { background: #f7f8fa; }
+    .file-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background: #e6f7e9;
+      display: grid;
+      place-items: center;
+      font-size: 0.65rem;
+      font-weight: 700;
+      color: #389e0d;
+    }
+    .file-icon.ppt { background: #fff2e8; color: #d46b08; }
+    .result-title { font-size: 0.88rem; }
+    .result-title em {
+      background: var(--highlight);
+      font-style: normal;
+      padding: 0 2px;
+    }
+    .result-meta { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+    .result-side { font-size: 0.72rem; color: var(--muted); }
+
+    /* Scheme C: dropdown */
+    .dropdown-wrap { position: relative; }
+    .suggest-layer {
+      margin-top: 8px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .suggest-section {
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .suggest-section:last-child { border-bottom: none; }
+    .suggest-label {
+      font-size: 0.68rem;
+      color: var(--muted);
+      padding: 4px 12px 6px;
+      letter-spacing: 0.03em;
+    }
+    .suggest-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      cursor: pointer;
+      font-size: 0.86rem;
+    }
+    .suggest-row:hover, .suggest-row.hl { background: #f0f7ff; }
+    .suggest-row.skill {
+      border-left: 3px solid transparent;
+      background: linear-gradient(90deg, rgba(124, 92, 255, 0.08), transparent);
+    }
+    .suggest-row.skill:hover { border-left-color: var(--ai-start); }
+    .suggest-row .mini {
+      font-size: 0.72rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    /* Scheme F: empty */
+    .empty-hero {
+      text-align: center;
+      padding: 28px 16px 16px;
+    }
+    .empty-hero h4 {
+      margin: 0 0 8px;
+      font-size: 1rem;
+    }
+    .empty-hero p { margin: 0; font-size: 0.85rem; color: var(--muted); }
+    .skill-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      padding: 0 4px 16px;
+    }
+    .skill-tile {
+      padding: 16px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: #fff;
+      cursor: pointer;
+      transition: border-color .15s;
+    }
+    .skill-tile:hover {
+      border-color: var(--blue);
+    }
+    .skill-tile .tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: var(--blue-soft);
+      color: var(--blue);
+      margin-bottom: 8px;
+    }
+    .skill-tile strong { font-size: 0.9rem; display: block; margin-bottom: 6px; }
+    .skill-tile p { margin: 0; font-size: 0.78rem; color: var(--muted); }
+
+    .hint {
+      margin-top: 16px;
+      padding: 12px 14px;
+      background: #fffbe6;
+      border: 1px solid #ffe58f;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      color: #874d00;
+    }
+    .footer-note {
+      margin-top: 20px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    kbd {
+      font-family: inherit;
+      font-size: 0.75em;
+      padding: 2px 6px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      background: #f7f8fa;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <h1>搜索场景 · 技能分发交互 Demo</h1>
+    <p class="subtitle">产品总监评审结论：从 7 套方案中选定 3 套进入原型验证（HTML 可点击演示）</p>
+
+    <section class="eval" aria-labelledby="eval-title">
+      <h2 id="eval-title">评审维度与入选方案</h2>
+      <p class="criteria">
+        <strong>评估维度：</strong>主路径覆盖率（搜索后能否完成任务）、路径长度（点击/认知成本）、
+        与现有「文件优先」心智的一致性、误触与打扰风险、工程与策略复杂度、对核心指标（任务发起率、搜索成功率、留存）的预期贡献。
+      </p>
+      <div class="eval-grid" style="margin-top:14px;">
+        <div class="eval-card selected">
+          <h3><span class="badge">入选</span> 方案 A · 结果页「智能动作条」</h3>
+          <p>在「全部」结果上方或右侧展示技能；配合<strong>窄屏可收起</strong>与<strong>宽屏右栏</strong>，减少对首屏文件条数的侵占。详见下方 Demo 切换。</p>
+        </div>
+        <div class="eval-card selected">
+          <h3><span class="badge">入选</span> 方案 C · 输入联想穿插技能</h3>
+          <p>输入过程中与文件/模板联想并列展示技能行，缩短「想到即做」的路径。对高频办公词 ROI 高，需严格样式区分与频控。</p>
+        </div>
+        <div class="eval-card selected">
+          <h3><span class="badge">入选</span> 方案 F · 弱结果/无结果时技能优先</h3>
+          <p>文件命中差时放大技能区，把失败检索转化为任务机会，差异化明显且利于体验口碑；与 A 互补而非替代。</p>
+        </div>
+      </div>
+      <div class="criteria">
+        <strong>本轮未入选（简述）：</strong>
+        B 适合作为二期「发现」补充，避免与热搜重复运营；
+        D 依赖用户切换 Tab，对大部分用户路径过长；
+        E 首条强插易引发「广告感」，需更强相关模型再试；
+        G 与「去问答」合并迭代更合适，不单独立项。
+      </div>
+    </section>
+
+    <p class="subtitle" style="margin-bottom:10px;">点击下方场景切换演示（均为前端模拟交互）</p>
+    <div class="demo-tabs" role="tablist">
+      <button type="button" class="active" data-demo="a" role="tab" aria-selected="true">场景 A · 结果页智能动作条</button>
+      <button type="button" data-demo="c" role="tab" aria-selected="false">场景 C · 输入联想穿插技能</button>
+      <button type="button" data-demo="f" role="tab" aria-selected="false">场景 F · 无结果技能优先</button>
+    </div>
+
+    <!-- Demo container: rewrites inner HTML via JS -->
+    <div id="demo-root" class="shell" aria-live="polite"></div>
+
+    <p class="footer-note">
+      说明：Demo 仅示意布局与层级；落地时需补充触发策略（置信度、用户数据可用性）、反馈入口与埋点。
+    </p>
+  </div>
+
+  <div id="overlay" class="overlay" role="dialog" aria-modal="true" aria-label="搜索面板">
+    <div class="modal" id="overlay-modal"></div>
+  </div>
+
+  <script>
+    const overlay = document.getElementById('overlay');
+    const overlayModal = document.getElementById('overlay-modal');
+    const demoRoot = document.getElementById('demo-root');
+
+    function closeOverlay() {
+      overlay.classList.remove('open');
+      overlayModal.innerHTML = '';
+      overlayModal.classList.remove('modal--wide');
+    }
+
+    function openOverlay(innerHtml, opts = {}) {
+      overlayModal.innerHTML = innerHtml;
+      overlayModal.classList.toggle('modal--wide', !!opts.wide);
+      overlay.classList.add('open');
+      overlayModal.querySelectorAll('[data-close]').forEach((el) => {
+        el.addEventListener('click', closeOverlay);
+      });
+    }
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeOverlay();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) closeOverlay();
+    });
+
+    function renderHomeShell(onOpenSearch) {
+      return `
+        <div class="shell-top">
+          <span class="logo">WPS 365</span>
+          <div class="search-pill" tabindex="0" role="button" id="open-search-trigger">
+            <span>🔍</span>
+            <span>搜索文件、模板、文库、应用、技巧…</span>
+          </div>
+          <span style="font-size:0.8rem;color:var(--muted);">智能问答</span>
+        </div>
+        <div class="shell-body">
+          <div class="sidebar">
+            <div class="btn-row">
+              <span class="fake-btn primary">+ 新建</span>
+              <span class="fake-btn ghost">打开</span>
+            </div>
+            最近 / 星标 / 共享…
+          </div>
+          <div class="main-placeholder">主界面文件列表（示意）</div>
+        </div>
+      `;
+    }
+
+    function modalFrame(bodyHtml, searchValue, extraHead) {
+      return `
+        <div class="modal-head">
+          <div class="modal-search">
+            <span>🔍</span>
+            <input type="text" placeholder="搜索文件、模板、文章、应用、技巧…" value="${searchValue || ''}" readonly style="cursor:default;" />
+            <span data-close style="cursor:pointer;color:var(--muted);font-size:1.1rem;">×</span>
+          </div>
+          <div class="modal-tabs">
+            <span class="on">全部</span>
+            <span>云文档</span>
+            <span>AI 搜文档</span>
+            <span>此电脑</span>
+            <span>模板</span>
+            <span>文库</span>
+            <span>应用</span>
+            <span>技巧</span>
+            <span>全文检索</span>
+          </div>
+          <div class="modal-tools">
+            <span class="sparkle-btn">✨ 去问答</span>
+          </div>
+        </div>
+        <div class="modal-body">${extraHead || ''}${bodyHtml}</div>
+      `;
+    }
+
+    function skillCardsThree() {
+      return `
+        <div class="skill-card" title="演示点击">
+          <div class="icon"></div>
+          <strong>从最近会议中整理纪要</strong>
+          <span>关联日历与会议录制，生成结构化纪要</span>
+        </div>
+        <div class="skill-card">
+          <div class="icon" style="background:linear-gradient(135deg,#3b82f6,#f97316);"></div>
+          <strong>将录音转写并入文档</strong>
+          <span>选择云文档并插入转写段落</span>
+        </div>
+        <div class="skill-card">
+          <div class="icon" style="background:linear-gradient(135deg,#10b981,#3b82f6);"></div>
+          <strong>套用会议纪要模板</strong>
+          <span>新建并填充参会人、决议项</span>
+        </div>
+      `;
+    }
+
+    function fileResultsBlock() {
+      return `
+        <div class="result-group">
+          <div class="result-head">云文档</div>
+          <div class="result-row">
+            <div class="file-icon">W</div>
+            <div>
+              <div class="result-title">2026 Q1 产品周会<em>会议纪要</em>.docx</div>
+              <div class="result-meta">昨天更新 · 我的云文档 / 项目 / 会议</div>
+            </div>
+            <div class="result-side">张三</div>
+          </div>
+          <div class="result-row">
+            <div class="file-icon ppt">P</div>
+            <div>
+              <div class="result-title">客户沟通<em>会议纪要</em>摘要.pptx</div>
+              <div class="result-meta">3 天前 · 团队文档库</div>
+            </div>
+            <div class="result-side">李四</div>
+          </div>
+          <div class="result-row">
+            <div class="file-icon">W</div>
+            <div>
+              <div class="result-title">晨会记录_0321<em>会议纪要</em>.docx</div>
+              <div class="result-meta">上周 · 我的云文档</div>
+            </div>
+            <div class="result-side">王五</div>
+          </div>
+          <div class="result-row">
+            <div class="file-icon">W</div>
+            <div>
+              <div class="result-title">跨部门评审<em>会议纪要</em>.docx</div>
+              <div class="result-meta">两周前 · 团队文档库</div>
+            </div>
+            <div class="result-side">赵六</div>
+          </div>
+        </div>
+      `;
+    }
+
+    function initDemoAInteractions(root) {
+      const wide = root.querySelector('#a-panel-wide');
+      const narrow = root.querySelector('#a-panel-narrow');
+      root.querySelectorAll('[data-layout-set]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const lay = btn.getAttribute('data-layout-set');
+          root.querySelectorAll('[data-layout-set]').forEach((b) => {
+            b.classList.toggle('on', b === btn);
+          });
+          if (wide) wide.hidden = lay !== 'wide';
+          if (narrow) narrow.hidden = lay !== 'narrow';
+        });
+      });
+
+      const stack = root.querySelector('#skill-stack-narrow');
+      const toggleBtn = root.querySelector('[data-toggle-stack]');
+      const stackBar = stack?.querySelector('.skill-stack-bar');
+
+      function syncCollapseUi() {
+        if (!stack || !toggleBtn) return;
+        toggleBtn.textContent = stack.classList.contains('is-collapsed') ? '展开' : '收起';
+      }
+
+      if (stack && toggleBtn) {
+        toggleBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          stack.classList.toggle('is-collapsed');
+          syncCollapseUi();
+        });
+      }
+
+      if (stack && stackBar) {
+        stackBar.addEventListener('click', (e) => {
+          if (e.target.closest('button')) return;
+          stack.classList.toggle('is-collapsed');
+          syncCollapseUi();
+        });
+      }
+
+      const dismissBtn = root.querySelector('[data-dismiss-stack]');
+      const dismissedTip = root.querySelector('#skill-dismissed-tip');
+      if (stack && dismissBtn && dismissedTip) {
+        dismissBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          stack.hidden = true;
+          dismissedTip.hidden = false;
+        });
+      }
+    }
+
+    /* -------- Demo A -------- */
+    function demoA() {
+      demoRoot.innerHTML = renderHomeShell();
+      document.getElementById('open-search-trigger').addEventListener('click', () => {
+        const body = `
+          <div class="a-demo-toolbar">
+            <strong>演示布局</strong>
+            <span class="seg" role="group" aria-label="布局切换">
+              <button type="button" class="on" data-layout-set="wide">宽屏 · 技能在右侧</button>
+              <button type="button" data-layout-set="narrow">窄屏 · 技能在顶部</button>
+            </span>
+            <span class="muted">宽屏下技能在右侧，列表区<strong>纵向</strong>可视文件行数不被占用；窄屏技能在顶部时可<strong>收起</strong>，释放首屏给文件列表。</span>
+          </div>
+
+          <div id="a-panel-wide">
+            <div class="a-layout a-wide">
+              <div class="a-main">
+                ${fileResultsBlock()}
+              </div>
+              <aside class="skill-rail" aria-label="推荐技能">
+                <h4>推荐技能</h4>
+                <p class="rail-note">基于「会议纪要」· 技能不占列表上方纵向空间，左侧列表可视行数与「无顶栏技能」时接近（整体在结果区内滚动）。</p>
+                ${skillCardsThree()}
+              </aside>
+            </div>
+          </div>
+
+          <div id="a-panel-narrow" hidden>
+            <div class="a-layout a-narrow">
+              <div class="skill-stack" id="skill-stack-narrow">
+                <div class="skill-stack-bar">
+                  <div class="left">
+                    <span class="toggle-chevron">▼</span>
+                    <span><strong>推荐技能</strong><span class="muted">（3）· 与「会议纪要」相关</span></span>
+                  </div>
+                  <div class="skill-stack-actions">
+                    <button type="button" class="text-btn" data-toggle-stack data-toggle-label>收起</button>
+                    <button type="button" class="text-btn danger" data-dismiss-stack>隐藏本类推荐</button>
+                  </div>
+                </div>
+                <div class="skill-stack-body">
+                  <div class="skill-strip">
+                    ${skillCardsThree()}
+                  </div>
+                </div>
+              </div>
+              <div id="skill-dismissed-tip" class="hint" hidden style="margin-bottom:12px;">
+                已隐藏此类技能推荐（演示）。正式产品可记在账号偏好或本会话内，避免反复打扰。
+              </div>
+              <div class="a-main">
+                ${fileResultsBlock()}
+              </div>
+            </div>
+          </div>
+
+          <div class="hint">
+            <strong>平滑体验要点：</strong>
+            （1）宽屏优先用<strong>右侧栏</strong>承载技能，文件列表可视行数不降；（2）窄屏用<strong>可收起横条</strong>，默认可设为收起或仅一行摘要；（3）提供「不感兴趣 / 隐藏本类」降低反感。
+          </div>
+        `;
+        openOverlay(modalFrame(body, '会议纪要'), { wide: true });
+        initDemoAInteractions(overlayModal.querySelector('.modal-body') || overlayModal);
+      });
+    }
+
+    /* -------- Demo C -------- */
+    function demoC() {
+      demoRoot.innerHTML = `
+        <div class="shell-top">
+          <span class="logo">WPS 365</span>
+          <div class="dropdown-wrap" style="flex:1;max-width:520px;margin:0 auto;">
+            <div class="modal-search" style="border-radius:999px;">
+              <span>🔍</span>
+              <input type="text" id="demo-c-input" placeholder="试试输入：会议" autocomplete="off" style="cursor:text;" />
+            </div>
+            <div id="demo-c-layer" style="display:none;"></div>
+          </div>
+          <span style="font-size:0.8rem;color:var(--muted);">智能问答</span>
+        </div>
+        <div class="shell-body">
+          <div class="sidebar">最近…</div>
+          <div class="main-placeholder">
+            在顶部搜索框输入包含 <kbd>会议</kbd> 二字，查看联想列表中的<strong>技能行</strong>（演示用）。
+          </div>
+        </div>
+      `;
+
+      const input = document.getElementById('demo-c-input');
+      const layer = document.getElementById('demo-c-layer');
+
+      function renderLayer(show) {
+        if (!show) {
+          layer.style.display = 'none';
+          layer.innerHTML = '';
+          return;
+        }
+        layer.className = 'suggest-layer';
+        layer.style.display = 'block';
+        layer.innerHTML = `
+          <div class="suggest-section">
+            <div class="suggest-label">文档与模板</div>
+            <div class="suggest-row">
+              <span>📄</span>
+              <span>2026 Q1 产品周会<strong>会议</strong>纪要.docx</span>
+              <span class="mini">云文档</span>
+            </div>
+            <div class="suggest-row">
+              <span>📋</span>
+              <span><strong>会议</strong>纪要模板（通用）</span>
+              <span class="mini">模板</span>
+            </div>
+          </div>
+          <div class="suggest-section">
+            <div class="suggest-label">技能 · 一键完成任务</div>
+            <div class="suggest-row skill hl">
+              <span>✨</span>
+              <span>从最近<strong>会议</strong>中整理纪要</span>
+              <span class="mini">Enter 发起</span>
+            </div>
+            <div class="suggest-row skill">
+              <span>✨</span>
+              <span>将上次<strong>会议</strong>录音转写插入文档</span>
+              <span class="mini">技能</span>
+            </div>
+          </div>
+        `;
+      }
+
+      input.addEventListener('input', () => {
+        renderLayer(input.value.includes('会议'));
+      });
+      input.addEventListener('focus', () => {
+        if (input.value.includes('会议')) renderLayer(true);
+      });
+    }
+
+    /* -------- Demo F -------- */
+    function demoF() {
+      demoRoot.innerHTML = renderHomeShell();
+      document.getElementById('open-search-trigger').addEventListener('click', () => {
+        const body = `
+          <div class="empty-hero">
+            <h4>未找到与「xyz123」相关的文档</h4>
+            <p>试试下面与办公相关的任务，或更换关键词 / 切换「云文档」范围</p>
+          </div>
+          <div class="section-title" style="margin-top:0;">推荐任务</div>
+          <div class="skill-grid">
+            <div class="skill-tile">
+              <span class="tag">你可能需要</span>
+              <strong>从最近会议中整理纪要</strong>
+              <p>无命中文件时，仍可根据日历与录制生成纪要草案</p>
+            </div>
+            <div class="skill-tile">
+              <span class="tag">模板</span>
+              <strong>新建会议纪要（标准结构）</strong>
+              <p>含议题、决议、待办与跟进人</p>
+            </div>
+            <div class="skill-tile">
+              <span class="tag">协作</span>
+              <strong>向团队发起会议预约</strong>
+              <p>同步空闲时间并创建日程</p>
+            </div>
+          </div>
+          <div class="result-group" style="opacity:0.65;">
+            <div class="result-head">云文档 · 建议放宽条件</div>
+            <div class="result-row" style="pointer-events:none;">
+              <div class="file-icon" style="background:#f5f5f5;color:#999;">—</div>
+              <div>
+                <div class="result-title" style="color:var(--muted);">暂无匹配项</div>
+                <div class="result-meta">可尝试全文检索或 AI 搜文档</div>
+              </div>
+            </div>
+          </div>
+          <div class="hint">交互要点：弱结果时<strong>扩大技能区面积</strong>；有强文件结果时回归方案 A 的轻量条，避免两套逻辑互相抢视线。</div>
+        `;
+        openOverlay(modalFrame(body, 'xyz123'));
+      });
+    }
+
+    const demos = { a: demoA, c: demoC, f: demoF };
+
+    document.querySelectorAll('.demo-tabs button').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.demo-tabs button').forEach((b) => {
+          b.classList.toggle('active', b === btn);
+          b.setAttribute('aria-selected', b === btn ? 'true' : 'false');
+        });
+        closeOverlay();
+        demos[btn.dataset.demo]();
+      });
+    });
+
+    demoA();
+  </script>
+</body>
+</html>
