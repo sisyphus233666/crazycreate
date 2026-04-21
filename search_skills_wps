@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WPS搜索场景 - 技能分发演示</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', sans-serif;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  padding: 40px 20px;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+  overflow: hidden;
+}
+.header {
+  background: linear-gradient(90deg, #4F46E5 0%, #7C3AED 100%);
+  padding: 30px;
+  color: white;
+}
+.header h1 { font-size: 24px; margin-bottom: 8px; }
+.header p { opacity: 0.9; font-size: 14px; }
+.search-section { padding: 30px; background: #f8fafc; }
+.search-box { position: relative; margin-bottom: 20px; }
+.search-input {
+  width: 100%;
+  padding: 16px 50px 16px 20px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  font-size: 16px;
+  transition: all 0.3s;
+  outline: none;
+}
+.search-input:focus {
+  border-color: #4F46E5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+}
+.search-icon {
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  font-size: 20px;
+}
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  margin-top: 8px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+  display: none;
+  z-index: 100;
+  max-height: 400px;
+  overflow-y: auto;
+}
+.suggestions.show { display: block; }
+.suggestion-item {
+  padding: 14px 20px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: background 0.2s;
+  border-bottom: 1px solid #f1f5f9;
+}
+.suggestion-item:hover { background: #f8fafc; }
+.suggestion-item:last-child { border-bottom: none; }
+.suggestion-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+.suggestion-icon.file { background: #dbeafe; color: #2563eb; }
+.suggestion-icon.skill { background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%); color: #d97706; }
+.suggestion-content { flex: 1; }
+.suggestion-title { font-size: 15px; color: #1e293b; margin-bottom: 2px; }
+.suggestion-desc { font-size: 12px; color: #64748b; }
+.skill-badge {
+  background: linear-gradient(90deg, #f59e0b 0%, #d97706 100%);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.results-section { padding: 0 30px 30px; }
+.results-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-top: 20px;
+  border-top: 1px solid #e2e8f0;
+}
+.results-title { font-size: 14px; color: #64748b; }
+.results-count { font-size: 14px; color: #4F46E5; font-weight: 600; }
+.skill-cards {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 20px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+.skill-card {
+  flex-shrink: 0;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+  min-width: 160px;
+}
+.skill-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
+}
+.skill-card-icon { font-size: 24px; margin-bottom: 8px; }
+.skill-card-title { font-size: 14px; font-weight: 600; color: #92400e; margin-bottom: 4px; }
+.skill-card-desc { font-size: 12px; color: #b45309; }
+.result-list { display: flex; flex-direction: column; gap: 12px; }
+.result-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.result-item:hover { background: #f1f5f9; transform: translateX(4px); }
+.result-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+}
+.result-icon.pdf { background: #fee2e2; color: #dc2626; }
+.result-icon.doc { background: #dbeafe; color: #2563eb; }
+.result-icon.xls { background: #d1fae5; color: #059669; }
+.result-icon.ppt { background: #fce7f3; color: #db2777; }
+.result-info { flex: 1; }
+.result-name { font-size: 15px; color: #1e293b; margin-bottom: 4px; font-weight: 500; }
+.result-meta { font-size: 12px; color: #94a3b8; }
+.empty-state { text-align: center; padding: 60px 20px; }
+.empty-icon { font-size: 64px; margin-bottom: 20px; opacity: 0.5; }
+.empty-title { font-size: 18px; color: #64748b; margin-bottom: 12px; }
+.empty-desc { font-size: 14px; color: #94a3b8; margin-bottom: 24px; }
+.skill-suggestion {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 20px;
+  max-width: 400px;
+  margin: 0 auto;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+.skill-suggestion:hover {
+  transform: scale(1.05);
+  box-shadow: 0 10px 30px rgba(245, 158, 11, 0.4);
+}
+.skill-suggestion-icon { font-size: 32px; margin-bottom: 12px; }
+.skill-suggestion-title { font-size: 16px; font-weight: 600; color: #92400e; margin-bottom: 8px; }
+.skill-suggestion-desc { font-size: 13px; color: #b45309; }
+.demo-tips {
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  padding: 16px;
+  margin-top: 20px;
+}
+.demo-tips-title { font-size: 14px; font-weight: 600; color: #1e40af; margin-bottom: 8px; }
+.demo-tips-list { font-size: 13px; color: #3b82f6; line-height: 1.8; }
+.tag {
+  display: inline-block;
+  background: #e0e7ff;
+  color: #4338ca;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  margin-right: 6px;
+}
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h1>🔍 WPS搜索场景 - 技能分发演示</h1>
+    <p>体验方案一（搜索联想推荐）+ 方案三（空结果技能兜底）</p>
+  </div>
+  
+  <div class="search-section">
+    <div class="search-box">
+      <input type="text" class="search-input" id="searchInput" placeholder="搜索文件、技能..." autocomplete="off">
+      <span class="search-icon">🔍</span>
+      <div class="suggestions" id="suggestions"></div>
+    </div>
+    
+    <div class="demo-tips">
+      <div class="demo-tips-title">💡 试试这些关键词体验不同场景：</div>
+      <div class="demo-tips-list">
+        <span class="tag">PDF</span> → 推荐PDF相关技能<br>
+        <span class="tag">合同</span> → 推荐合同处理技能<br>
+        <span class="tag">会议</span> → 推荐会议相关技能<br>
+        <span class="tag">年终总结</span> → 推荐AI生成技能<br>
+        <span class="tag">不存在的文件</span> → 空结果+技能兜底
+      </div>
+    </div>
+  </div>
+  
+  <div class="results-section" id="resultsSection" style="display: none;">
+    <div class="results-header">
+      <span class="results-title">搜索结果</span>
+      <span class="results-count" id="resultsCount"></span>
+    </div>
+    <div id="skillCardsArea"></div>
+    <div class="result-list" id="resultList"></div>
+  </div>
+  
+  <div class="results-section" id="emptyState" style="display: none;">
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <div class="empty-title">没有找到相关文件</div>
+      <div class="empty-desc">但技能可以帮你创建！</div>
+      <div class="skill-suggestion" id="emptySkillSuggestion">
+        <div class="skill-suggestion-icon">✨</div>
+        <div class="skill-suggestion-title" id="emptySkillTitle">AI生成文档</div>
+        <div class="skill-suggestion-desc" id="emptySkillDesc">点击使用技能帮你创建</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const searchInput = document.getElementById('searchInput');
+const suggestions = document.getElementById('suggestions');
+const resultsSection = document.getElementById('resultsSection');
+const emptyState = document.getElementById('emptyState');
+const resultList = document.getElementById('resultList');
+const resultsCount = document.getElementById('resultsCount');
+const skillCardsArea = document.getElementById('skillCardsArea');
+
+const skills = {
+  'pdf': [
+    { icon: '📄', title: 'PDF转Word', desc: '一键转换为可编辑文档' },
+    { icon: '📑', title: 'PDF合并', desc: '多个PDF合并为一个' },
+    { icon: '📦', title: 'PDF压缩', desc: '减小文件体积' }
+  ],
+  '合同': [
+    { icon: '⚖️', title: '合同比对', desc: '智能对比两份合同差异' },
+    { icon: '📝', title: '合同模板生成', desc: '快速生成标准合同' },
+    { icon: '🔍', title: '关键信息提取', desc: '提取合同核心条款' }
+  ],
+  '会议': [
+    { icon: '🎙️', title: '会议录音转纪要', desc: 'AI自动生成会议纪要' },
+    { icon: '📋', title: '会议纪要模板', desc: '标准会议记录模板' },
+    { icon: '📊', title: '会议待办提取', desc: '自动提取行动项' }
+  ],
+  '年终总结': [
+    { icon: '✨', title: 'AI生成年终总结', desc: '智能生成年度工作总结' },
+    { icon: '📈', title: '数据可视化', desc: '一键生成数据图表' },
+    { icon: '🎨', title: '一键排版', desc: '专业文档排版' }
+  ]
+};
+
+const files = {
+  'pdf': [
+    { icon: 'pdf', name: '产品需求文档.pdf', meta: '2.3MB · 昨天' },
+    { icon: 'pdf', name: '合同范本.pdf', meta: '1.1MB · 3天前' },
+    { icon: 'pdf', name: '项目报告.pdf', meta: '856KB · 上周' }
+  ],
+  '合同': [
+    { icon: 'doc', name: '劳动合同模板.docx', meta: '45KB · 2天前' },
+    { icon: 'pdf', name: '合作协议.pdf', meta: '320KB · 上周' }
+  ],
+  '会议': [
+    { icon: 'doc', name: '产品评审会议纪要.docx', meta: '28KB · 今天' },
+    { icon: 'ppt', name: '季度汇报.pptx', meta: '5.2MB · 昨天' }
+  ],
+  '年终总结': [
+    { icon: 'doc', name: '2025年终总结.docx', meta: '156KB · 1月前' },
+    { icon: 'xls', name: '年度数据汇总.xlsx', meta: '2.1MB · 2月前' }
+  ]
+};
+
+searchInput.addEventListener('input', function() {
+  const value = this.value.trim().toLowerCase();
+  if (!value) {
+    suggestions.classList.remove('show');
+    return;
+  }
+  
+  let html = '';
+  let matchedKey = null;
+  
+  for (const key in skills) {
+    if (value.includes(key.toLowerCase()) || key.toLowerCase().includes(value)) {
+      matchedKey = key;
+      skills[key].forEach(skill => {
+        html += `
+          <div class="suggestion-item">
+            <div class="suggestion-icon skill">${skill.icon}</div>
+            <div class="suggestion-content">
+              <div class="suggestion-title">${skill.title}</div>
+              <div class="suggestion-desc">${skill.desc}</div>
+            </div>
+            <span class="skill-badge">⚡ 技能</span>
+          </div>`;
+      });
+      break;
+    }
+  }
+  
+  if (matchedKey && files[matchedKey]) {
+    files[matchedKey].forEach(file => {
+      html += `
+        <div class="suggestion-item">
+          <div class="suggestion-icon file">${file.icon === 'pdf' ? '📄' : file.icon === 'doc' ? '📝' : file.icon === 'xls' ? '📊' : '📑'}</div>
+          <div class="suggestion-content">
+            <div class="suggestion-title">${file.name}</div>
+            <div class="suggestion-desc">${file.meta}</div>
+          </div>
+        </div>`;
+    });
+  }
+  
+  if (html) {
+    suggestions.innerHTML = html;
+    suggestions.classList.add('show');
+  } else {
+    suggestions.classList.remove('show');
+  }
+});
+
+searchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const value = this.value.trim();
+    suggestions.classList.remove('show');
+    showResults(value);
+  }
+});
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.search-box')) {
+    suggestions.classList.remove('show');
+  }
+});
+
+function showResults(query) {
+  let matchedKey = null;
+  for (const key in files) {
+    if (query.toLowerCase().includes(key.toLowerCase())) {
+      matchedKey = key;
+      break;
+    }
+  }
+  
+  if (matchedKey && files[matchedKey]) {
+    resultsSection.style.display = 'block';
+    emptyState.style.display = 'none';
+    
+    const matchedFiles = files[matchedKey];
+    resultsCount.textContent = `找到 ${matchedFiles.length} 个文件`;
+    
+    let skillHtml = '<div class="skill-cards">';
+    skills[matchedKey].forEach(skill => {
+      skillHtml += `
+        <div class="skill-card">
+          <div class="skill-card-icon">${skill.icon}</div>
+          <div class="skill-card-title">${skill.title}</div>
+          <div class="skill-card-desc">${skill.desc}</div>
+        </div>`;
+    });
+    skillHtml += '</div>';
+    skillCardsArea.innerHTML = skillHtml;
+    
+    let listHtml = '';
+    matchedFiles.forEach(file => {
+      listHtml += `
+        <div class="result-item">
+          <div class="result-icon <!--LATEX_INLINE_0-->{file.icon === 'pdf' ? '📄' : file.icon === 'doc' ? '📝' : file.icon === 'xls' ? '📊' : '📑'}</div>
+          <div class="result-info">
+            <div class="result-name">${file.name}</div>
+            <div class="result-meta">${file.meta}</div>
+          </div>
+        </div>`;
+    });
+    resultList.innerHTML = listHtml;
+  } else {
+    resultsSection.style.display = 'none';
+    emptyState.style.display = 'block';
+    
+    document.getElementById('emptySkillTitle').textContent = 'AI生成"' + query + '"';
+    document.getElementById('emptySkillDesc').textContent = '点击使用技能帮你创建相关文档';
+  }
+}
+</script>
+</body>
+</html>
