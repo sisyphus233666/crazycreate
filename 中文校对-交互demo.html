@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>中文校对 · 交互演示</title>
+  <style>
+    :root {
+      --blue: #5b86f5;
+      --blue-soft: #e8f0ff;
+      --text: #1a1a1a;
+      --sub: #8a8a8a;
+      --line: #f0f0f0;
+      --danger: #c62828;
+      --sheet-bg: #f5f5f5;
+    }
+
+    * { box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      background: #222;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+      min-height: 100%;
+    }
+
+    .device {
+      position: relative;
+      width: min(390px, 100%);
+      height: min(844px, 92vh);
+      background: #fff;
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* —— 阅读模式文档区（对齐图1：顶栏 + 正文 + 品牌条 + 转发/点赞/收藏 + 底栏） —— */
+    .edit-layer {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      background: #f0f2f5;
+    }
+
+    .read-top {
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 6px 8px 2px;
+      border-bottom: 1px solid var(--line);
+      background: #fff;
+    }
+
+    .read-title {
+      flex: 1;
+      margin: 0;
+      text-align: center;
+      font-size: 15px;
+      font-weight: 600;
+      line-height: 1.3;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      padding: 0 4px;
+    }
+
+    .read-top-right {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex-shrink: 0;
+    }
+
+    .read-cube {
+      width: 26px;
+      height: 26px;
+      border-radius: 6px;
+      background: linear-gradient(145deg, #6ec8ff 0%, #4a90e8 45%, #2563c8 100%);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+
+    .read-avatar {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      background: linear-gradient(180deg, #e0e0e0, #bdbdbd);
+      border: 1px solid #e5e5e5;
+    }
+
+    .read-top .tb-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      cursor: default;
+      display: grid;
+      place-items: center;
+      color: var(--text);
+      padding: 0;
+    }
+
+    .read-scroll {
+      flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 12px 14px 8px;
+      position: relative;
+    }
+
+    .doc-paper {
+      background: #fff;
+      border-radius: 2px;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+      padding: 20px 18px 36px;
+      position: relative;
+      min-height: 120px;
+      border: 1px solid #eee;
+    }
+
+    .doc-in-title {
+      margin: 0 0 16px;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 1.4;
+      color: var(--text);
+    }
+
+    .doc-text {
+      margin: 0;
+      font-size: 16px;
+      line-height: 2;
+      color: var(--text);
+    }
+
+    .page-num-badge {
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      background: #5a5a5a;
+      color: #fff;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+
+    .hint-badge {
+      position: absolute;
+      bottom: 12px;
+      right: 14px;
+      left: auto;
+      font-size: 11px;
+      color: #aaa;
+      background: rgba(255, 255, 255, 0.95);
+      padding: 4px 8px;
+      border-radius: 4px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .read-footer-brand {
+      flex-shrink: 0;
+      text-align: center;
+      font-size: 11px;
+      color: #c6c6c6;
+      padding: 10px 12px 6px;
+      letter-spacing: 0.02em;
+    }
+
+    .social-bar {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-end;
+      gap: 28px;
+      padding: 4px 20px 10px;
+      background: #f0f2f5;
+    }
+
+    .social-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 5px;
+      border: none;
+      background: transparent;
+      padding: 0;
+      cursor: default;
+      font-family: inherit;
+      color: #555;
+    }
+
+    .social-circle {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      background: #fff;
+      border: 1px solid #eaeaea;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      color: #666;
+    }
+
+    .social-label {
+      font-size: 11px;
+      color: #666;
+    }
+
+    .read-tabbar {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+      background: #fff;
+      border-top: 1px solid var(--line);
+    }
+
+    .tab-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      border: none;
+      background: transparent;
+      padding: 4px 2px;
+      cursor: default;
+      font-family: inherit;
+      color: #888;
+      font-size: 11px;
+    }
+
+    .tab-item .ti-ico {
+      font-size: 20px;
+      line-height: 1;
+    }
+
+    .sys-nav-hint {
+      flex-shrink: 0;
+      height: 6px;
+      background: #fff;
+    }
+
+    .err-span {
+      text-decoration: underline wavy var(--danger);
+      text-underline-offset: 3px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+
+    .err-span.is-active {
+      background: rgba(91, 134, 245, 0.2);
+    }
+
+    .err-span.is-done {
+      text-decoration: underline wavy #2e7d32;
+      text-underline-offset: 3px;
+      color: inherit;
+    }
+
+    .err-span.is-ignored {
+      text-decoration: underline dotted #999;
+      opacity: 0.85;
+    }
+
+    /* —— 校对面板 —— */
+    .proof-mask {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.25);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      z-index: 30;
+    }
+
+    .proof-mask.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .proof-panel {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 52%;
+      min-height: 280px;
+      max-height: 78%;
+      background: var(--sheet-bg);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+      display: flex;
+      flex-direction: column;
+      z-index: 40;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .proof-panel.open {
+      transform: translateY(0);
+    }
+
+    .proof-handle {
+      width: 36px;
+      height: 4px;
+      background: #ddd;
+      border-radius: 2px;
+      margin: 8px auto 4px;
+      flex-shrink: 0;
+    }
+
+    .proof-head {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 4px 44px 10px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .proof-back {
+      position: absolute;
+      left: 4px;
+      top: 0;
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      font-size: 20px;
+      color: #333;
+    }
+
+    .proof-title {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .proof-filters {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 12px 10px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .filter-dd-wrap {
+      position: relative;
+    }
+
+    .filter-trigger {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: none;
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .filter-trigger.open {
+      outline: 2px solid var(--blue);
+    }
+
+    .filter-menu {
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 220px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+      padding: 6px 0;
+      z-index: 50;
+      display: none;
+    }
+
+    .filter-menu.open {
+      display: block;
+    }
+
+    .filter-menu button {
+      display: flex;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      border: none;
+      background: #fff;
+      font-size: 14px;
+      text-align: left;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .filter-menu button:hover {
+      background: #f5f5f5;
+    }
+
+    .filter-menu button.active {
+      color: #0d9488;
+      font-weight: 600;
+    }
+
+    .filter-menu .count {
+      color: var(--sub);
+      font-size: 13px;
+    }
+
+    .pill-gray {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: none;
+      background: #e8e8e8;
+      color: #555;
+      font-size: 13px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .pill-tab-active {
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 600;
+    }
+
+    .filter-trigger.filter-muted {
+      background: #e8e8e8;
+      color: #555;
+      font-weight: 400;
+    }
+
+    .filter-trigger.filter-muted.open {
+      outline: none;
+    }
+
+    .toolbar-action-hidden {
+      display: none !important;
+    }
+
+    .link-all {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--blue);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .proof-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 12px 16px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .err-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border: 1px solid #e8e8e8;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .err-card.active {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue);
+    }
+
+    .err-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .err-card .batch {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--blue);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .err-summary {
+      font-size: 13px;
+      color: var(--sub);
+      line-height: 1.45;
+    }
+
+    .err-summary strong {
+      color: var(--text);
+    }
+
+    .err-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .err-card:not(.active) .err-actions {
+      display: none;
+    }
+
+    /* 修改记录卡片 */
+    .hist-card {
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border: 1px solid #e8e8e8;
+      cursor: pointer;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+    }
+
+    .hist-card:not(.active) {
+      background: #f5f5f5;
+      border-color: #eee;
+    }
+
+    .hist-card.active {
+      background: #fff;
+      border-color: var(--blue);
+      box-shadow: 0 0 0 1px var(--blue);
+    }
+
+    .hist-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .hist-card .batch-undo {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--blue);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .hist-body {
+      font-size: 13px;
+      color: var(--sub);
+      line-height: 1.5;
+    }
+
+    .hist-body strong {
+      color: var(--text);
+    }
+
+    .hist-actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 1px solid #f0f0f0;
+    }
+
+    .hist-card:not(.active) .hist-actions {
+      display: none;
+    }
+
+    .hist-card:not(.active) .hist-card-top .batch-undo {
+      display: none;
+    }
+
+    .hist-one-line {
+      font-size: 13px;
+      color: var(--sub);
+      margin-top: 2px;
+    }
+
+    .btn-undo {
+      padding: 7px 18px;
+      border-radius: 20px;
+      border: 1px solid #ddd;
+      background: #fff;
+      color: #333;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-s {
+      padding: 7px 18px;
+      border-radius: 20px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-ignore {
+      background: #ececec;
+      color: #555;
+    }
+
+    .btn-fix {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .toast {
+      position: absolute;
+      bottom: 52%;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: rgba(0, 0, 0, 0.78);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 13px;
+      z-index: 60;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .toast.show {
+      opacity: 1;
+    }
+
+    /* 全部修正成功：面板底部白色 Toast（对齐产品稿） */
+    .toast-fixall {
+      position: absolute;
+      left: 12px;
+      right: 12px;
+      bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 14px;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 4px 22px rgba(0, 0, 0, 0.12);
+      z-index: 45;
+      opacity: 0;
+      transform: translateY(10px);
+      pointer-events: none;
+      transition: opacity 0.28s ease, transform 0.28s ease;
+    }
+
+    .toast-fixall.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .toast-fixall-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      background: linear-gradient(145deg, #ef5350, #c62828);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      font-family: "Segoe UI", Arial, sans-serif;
+      letter-spacing: -0.02em;
+    }
+
+    .toast-fixall-text {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+      line-height: 1.35;
+    }
+
+    /* 暂无错误空状态 */
+    .proof-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 20px 48px;
+      text-align: center;
+    }
+
+    .proof-empty-icon {
+      width: 72px;
+      height: 72px;
+      margin-bottom: 14px;
+      border-radius: 18px;
+      background: linear-gradient(180deg, #e3f5ff 0%, #d6efff 100%);
+      display: grid;
+      place-items: center;
+      color: #64b5f6;
+    }
+
+    .proof-empty-icon svg {
+      width: 36px;
+      height: 36px;
+    }
+
+    .proof-empty-title {
+      font-size: 14px;
+      color: #999;
+      margin: 0;
+    }
+
+    /* 图4 退出确认 */
+    .exit-dialog-mask {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .exit-dialog-mask.open {
+      display: flex;
+    }
+
+    .exit-dialog {
+      background: #fff;
+      border-radius: 14px;
+      padding: 20px 18px 16px;
+      max-width: 300px;
+      width: 100%;
+      box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+    }
+
+    .exit-dialog h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      font-weight: 600;
+      text-align: center;
+    }
+
+    .exit-dialog p {
+      margin: 0 0 18px;
+      font-size: 14px;
+      color: #555;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .exit-actions {
+      display: flex;
+      border-top: 1px solid #eee;
+      margin: 0 -18px -16px;
+      padding-top: 0;
+    }
+
+    .exit-actions button {
+      flex: 1;
+      padding: 14px 12px;
+      border: none;
+      background: #fff;
+      font-size: 15px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .exit-actions .btn-exit {
+      color: #666;
+      border-right: 1px solid #eee;
+      border-radius: 0 0 0 14px;
+    }
+
+    .exit-actions .btn-stay {
+      color: var(--blue);
+      font-weight: 600;
+      border-radius: 0 0 14px 0;
+    }
+
+    .fab-open {
+      position: absolute;
+      bottom: 168px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 25;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 24px;
+      background: var(--blue);
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(91, 134, 245, 0.45);
+      font-family: inherit;
+    }
+
+    .fab-open.hidden {
+      display: none;
+    }
+
+    .legend {
+      position: absolute;
+      top: 8px;
+      left: 12px;
+      right: 12px;
+      font-size: 11px;
+      color: #888;
+      z-index: 26;
+      text-align: center;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="device" id="device">
+    <p class="legend">打开校对 →「修改记录」看已修正列表；点「所有错误」回待处理；全部修正后支持全部撤销；点 ‹ 有未处理时弹窗</p>
+
+    <div class="edit-layer" id="editLayer">
+      <header class="read-top">
+        <button type="button" class="tb-btn" aria-label="返回">‹</button>
+        <h2 class="read-title">有错别字的日常文案</h2>
+        <div class="read-top-right">
+          <span class="read-cube" aria-hidden="true" title="金山文档"></span>
+          <span class="read-avatar" aria-hidden="true"></span>
+          <button type="button" class="tb-btn" aria-label="分享">↗</button>
+          <button type="button" class="tb-btn" aria-label="菜单">☰</button>
+        </div>
+      </header>
+
+      <div class="read-scroll" id="readScroll">
+        <article class="doc-paper">
+          <div id="docText"></div>
+          <span class="page-num-badge" aria-hidden="true">1</span>
+        </article>
+        <span class="hint-badge">全文: 552</span>
+      </div>
+
+      <div class="read-footer-brand">金山文档｜WPS云文档</div>
+
+      <div class="social-bar" aria-label="互动">
+        <button type="button" class="social-item">
+          <span class="social-circle" aria-hidden="true">↪</span>
+          <span class="social-label">转发</span>
+        </button>
+        <button type="button" class="social-item">
+          <span class="social-circle" aria-hidden="true">👍</span>
+          <span class="social-label">点赞</span>
+        </button>
+        <button type="button" class="social-item">
+          <span class="social-circle" aria-hidden="true">☆</span>
+          <span class="social-label">收藏</span>
+        </button>
+      </div>
+
+      <nav class="read-tabbar" aria-label="文档工具">
+        <button type="button" class="tab-item"><span class="ti-ico" aria-hidden="true">✎</span><span>编辑</span></button>
+        <button type="button" class="tab-item"><span class="ti-ico" aria-hidden="true">◎</span><span>墨迹</span></button>
+        <button type="button" class="tab-item"><span class="ti-ico" aria-hidden="true">▤</span><span>连页</span></button>
+        <button type="button" class="tab-item"><span class="ti-ico" aria-hidden="true">🖨</span><span>打印</span></button>
+      </nav>
+      <div class="sys-nav-hint" aria-hidden="true"></div>
+    </div>
+
+    <button type="button" class="fab-open" id="btnOpenProof">打开「中文校对」</button>
+
+    <div class="proof-mask" id="proofMask"></div>
+
+    <aside class="proof-panel" id="proofPanel" aria-hidden="true">
+      <div class="proof-handle"></div>
+      <div class="proof-head">
+        <button type="button" class="proof-back" id="btnProofBack" aria-label="关闭校对">‹</button>
+        <h2 class="proof-title">中文校对</h2>
+      </div>
+
+      <div class="proof-filters">
+        <div class="filter-dd-wrap">
+          <button type="button" class="filter-trigger" id="filterTrigger" aria-expanded="false">
+            <span id="filterLabel">所有错误</span>(<span id="filterCount">0</span>)
+            <span aria-hidden="true">▼</span>
+          </button>
+          <div class="filter-menu" id="filterMenu" role="menu">
+            <button type="button" role="menuitem" data-filter="all">
+              <span>所有错误</span><span class="count">(<span data-c-all>0</span>)</span>
+            </button>
+            <button type="button" role="menuitem" data-filter="word">
+              <span>字词问题</span><span class="count">(<span data-c-word>0</span>)</span>
+            </button>
+            <button type="button" role="menuitem" data-filter="knowledge">
+              <span>知识性问题</span><span class="count">(<span data-c-know>0</span>)</span>
+            </button>
+            <button type="button" role="menuitem" data-filter="grammar">
+              <span>语法问题</span><span class="count">(<span data-c-gram>0</span>)</span>
+            </button>
+          </div>
+        </div>
+        <button type="button" class="pill-gray" id="btnHistory">修改记录</button>
+        <button type="button" class="link-all" id="btnFixAll">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          <span id="btnFixAllText">全部修正</span>
+        </button>
+        <button type="button" class="link-all toolbar-action-hidden" id="btnUndoAll">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7v6h6"/><path d="M21 17v-6h-6"/><path d="M3 13a9 9 0 0 1 14.85-3.36L21 10M21 17a9 9 0 0 1-14.85 3.36L3 14"/></svg>
+          <span>全部撤销</span>
+        </button>
+      </div>
+
+      <div class="proof-list" id="proofList"></div>
+
+      <div class="toast-fixall" id="toastFixAll" role="status" aria-live="polite">
+        <span class="toast-fixall-icon" aria-hidden="true">W</span>
+        <span class="toast-fixall-text">已替换所有建议修改</span>
+      </div>
+    </aside>
+
+    <div class="toast" id="toast"></div>
+
+    <div class="exit-dialog-mask" id="exitDialog" role="dialog" aria-modal="true" aria-labelledby="exitTitle">
+      <div class="exit-dialog">
+        <h3 id="exitTitle">还有 <span id="exitPendingNum">0</span> 个未处理点评</h3>
+        <p>退出后需要重新校对，是否继续校对？</p>
+        <div class="exit-actions">
+          <button type="button" class="btn-exit" id="btnExitAnyway">退出</button>
+          <button type="button" class="btn-stay" id="btnStayProof">继续校对</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var CAT = { word: "字词问题", knowledge: "知识性问题", grammar: "语法问题" };
+
+      var items = [
+        { id: "e1", cat: "word", type: "字词错误", from: "公圆", to: "公园" },
+        { id: "e2", cat: "word", type: "字词错误", from: "我望", to: "望" },
+        { id: "e3", cat: "word", type: "字词错误", from: "手几", to: "手机" },
+        { id: "e4", cat: "grammar", type: "语序不当", from: "谁喝水", to: "水谁喝", note: "AI 建议", sub: "谁 → 水" },
+        { id: "e5", cat: "knowledge", type: "知识性问题", from: "不详", to: "不堪", sub: "成语搭配" },
+        { id: "e6", cat: "grammar", type: "成分残缺", from: "的称号", to: "之一" }
+      ];
+
+      var status = {};
+      items.forEach(function (x) { status[x.id] = "pending"; });
+
+      var currentFilter = "all";
+      var selectedId = items[0].id;
+      var panelMode = "errors";
+      var selectedHistoryId = "e1";
+
+      var proofPanel = document.getElementById("proofPanel");
+      var proofMask = document.getElementById("proofMask");
+      var proofList = document.getElementById("proofList");
+      var docText = document.getElementById("docText");
+      var filterTrigger = document.getElementById("filterTrigger");
+      var filterMenu = document.getElementById("filterMenu");
+      var filterLabel = document.getElementById("filterLabel");
+      var filterCount = document.getElementById("filterCount");
+      var btnOpenProof = document.getElementById("btnOpenProof");
+      var btnProofBack = document.getElementById("btnProofBack");
+      var exitDialog = document.getElementById("exitDialog");
+      var exitPendingNum = document.getElementById("exitPendingNum");
+      var toastEl = document.getElementById("toast");
+      var toastFixAll = document.getElementById("toastFixAll");
+
+      var passage =
+        '<h3 class="doc-in-title">有错别字的日常文案</h3>' +
+        '<p class="doc-text">' +
+        '周末我们去<span data-eid="e1" class="err-span">公圆</span>散步，天气很好。路上我<span data-eid="e2" class="err-span">我望</span>着天空发呆。' +
+        '突然想起<span data-eid="e3" class="err-span">手几</span>落在家里——这种<span data-eid="e4" class="err-span">谁喝水</span>的表达在口语里很常见。' +
+        '这篇文章写得<span data-eid="e5" class="err-span">不详</span>人意，结尾缺少<span data-eid="e6" class="err-span">的称号</span>收尾。' +
+        "</p>";
+
+      docText.innerHTML = passage;
+
+      function pendingList() {
+        return items.filter(function (i) { return status[i.id] === "pending"; });
+      }
+
+      function pendingCount() {
+        return pendingList().length;
+      }
+
+      function countByCat(cat) {
+        return items.filter(function (i) {
+          return status[i.id] === "pending" && (cat === "all" || i.cat === cat);
+        }).length;
+      }
+
+      function filteredItems() {
+        return items.filter(function (i) {
+          if (status[i.id] !== "pending") return false;
+          if (currentFilter === "all") return true;
+          return i.cat === currentFilter;
+        });
+      }
+
+      function syncFilterTriggerLabel() {
+        var names = { all: "所有错误", word: "字词问题", knowledge: "知识性问题", grammar: "语法问题" };
+        filterLabel.textContent = names[currentFilter];
+        var n =
+          currentFilter === "all"
+            ? pendingCount()
+            : countByCat(currentFilter);
+        filterCount.textContent = String(n);
+      }
+
+      function syncMenuCounts() {
+        filterMenu.querySelector("[data-c-all]").textContent = String(countByCat("all"));
+        filterMenu.querySelector("[data-c-word]").textContent = String(countByCat("word"));
+        filterMenu.querySelector("[data-c-know]").textContent = String(countByCat("knowledge"));
+        filterMenu.querySelector("[data-c-gram]").textContent = String(countByCat("grammar"));
+        filterMenu.querySelectorAll("[data-filter]").forEach(function (btn) {
+          btn.classList.toggle("active", btn.getAttribute("data-filter") === currentFilter);
+        });
+      }
+
+      function syncDocHighlights() {
+        docText.querySelectorAll(".err-span").forEach(function (span) {
+          var id = span.getAttribute("data-eid");
+          span.classList.remove("is-active", "is-done", "is-ignored");
+          if (status[id] === "fixed") span.classList.add("is-done");
+          else if (status[id] === "ignored") span.classList.add("is-ignored");
+          if (panelMode === "errors" && id === selectedId && status[id] === "pending") span.classList.add("is-active");
+          if (panelMode === "history" && id === selectedHistoryId && status[id] === "fixed") span.classList.add("is-active");
+        });
+      }
+
+      function syncFilterBar() {
+        var hist = panelMode === "history";
+        filterTrigger.classList.toggle("filter-muted", hist);
+        document.getElementById("btnHistory").classList.toggle("pill-tab-active", hist);
+        document.getElementById("btnFixAll").classList.toggle("toolbar-action-hidden", hist);
+        document.getElementById("btnUndoAll").classList.toggle("toolbar-action-hidden", !hist);
+        if (hist) {
+          filterMenu.classList.remove("open");
+          filterTrigger.classList.remove("open");
+          filterTrigger.setAttribute("aria-expanded", "false");
+        }
+      }
+
+      function fixedItemsOrdered() {
+        return items
+          .filter(function (i) {
+            return status[i.id] === "fixed";
+          })
+          .reverse();
+      }
+
+      function renderHistoryList() {
+        var list = fixedItemsOrdered();
+        if (list.length && !list.some(function (x) { return x.id === selectedHistoryId; }))
+          selectedHistoryId = list[0].id;
+
+        proofList.innerHTML = list
+          .map(function (item) {
+            var active = item.id === selectedHistoryId;
+            var tag = item.type + "【已修改】";
+            var line = item.from + " → <strong>" + item.to + "</strong>";
+            if (active) {
+              return (
+                '<div class="hist-card active" data-hid="' +
+                item.id +
+                '" role="button" tabindex="0">' +
+                '<div class="hist-card-top">' +
+                "<span>" +
+                tag +
+                "</span>" +
+                '<button type="button" class="batch-undo" data-h-batch="' +
+                item.id +
+                '">撤销同类修改</button>' +
+                "</div>" +
+                '<div class="hist-body">' +
+                line +
+                "</div>" +
+                '<div class="hist-actions">' +
+                '<button type="button" class="btn-undo" data-h-undo="' +
+                item.id +
+                '">撤销</button>' +
+                "</div>" +
+                "</div>"
+              );
+            }
+            return (
+              '<div class="hist-card" data-hid="' +
+              item.id +
+              '" role="button" tabindex="0">' +
+              '<div class="hist-card-top"><span>' +
+              tag +
+              "</span></div>" +
+              '<div class="hist-one-line">' +
+              line +
+              "</div>" +
+              "</div>"
+            );
+          })
+          .join("");
+
+        if (!list.length) {
+          proofList.innerHTML =
+            '<div class="proof-empty" style="padding-top:28px">' +
+            '<div class="proof-empty-icon" aria-hidden="true">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/></svg>' +
+            '</div>' +
+            '<p class="proof-empty-title">暂无修改记录</p>' +
+            "<p style=\"margin:8px 0 0;font-size:12px;color:#bbb;text-align:center\">请先修正文档中的错误</p>" +
+            "</div>";
+        }
+
+        syncDocHighlights();
+      }
+
+      function renderErrorsList() {
+        var list = filteredItems();
+        if (list.length && !list.some(function (x) { return x.id === selectedId; }))
+          selectedId = list[0].id;
+
+        proofList.innerHTML = list
+          .map(function (item) {
+            var active = item.id === selectedId;
+            var line =
+              item.sub ||
+              item.from + " → " + item.to;
+            var tag = item.note
+              ? '<span style="font-size:11px;background:#f3e8ff;color:#7c3aed;padding:2px 6px;border-radius:6px;margin-left:6px;">' +
+                item.note +
+                "</span>"
+              : "";
+            return (
+              '<div class="err-card' +
+              (active ? " active" : "") +
+              '" data-id="' +
+              item.id +
+              '" role="button" tabindex="0">' +
+              '<div class="err-card-top">' +
+              "<span>" +
+              item.type +
+              tag +
+              "</span>" +
+              (active
+                ? '<button type="button" class="batch" data-batch="' +
+                  item.id +
+                  '">修正同类错误</button>'
+                : "") +
+              "</div>" +
+              '<div class="err-summary">' +
+              (active
+                ? line.replace(
+                    new RegExp(item.to.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "g"),
+                    function (m) {
+                      return "<strong>" + m + "</strong>";
+                    }
+                  )
+                : item.type + " | " + item.from + " → <strong>" + item.to + "</strong>") +
+              "</div>" +
+              (active
+                ? '<div class="err-actions">' +
+                  '<button type="button" class="btn-s btn-ignore" data-act="ignore" data-id="' +
+                  item.id +
+                  '">忽略</button>' +
+                  '<button type="button" class="btn-s btn-fix" data-act="fix" data-id="' +
+                  item.id +
+                  '">修正</button>' +
+                  "</div>"
+                : "") +
+              "</div>"
+            );
+          })
+          .join("");
+
+        if (!list.length) {
+          if (pendingCount() === 0) {
+            proofList.innerHTML =
+              '<div class="proof-empty">' +
+              '<div class="proof-empty-icon" aria-hidden="true">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+              '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2M9 5a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2"/>' +
+              '</svg></div>' +
+              '<p class="proof-empty-title">暂无错误</p></div>';
+          } else {
+            proofList.innerHTML =
+              '<p style="text-align:center;color:#999;padding:24px;font-size:14px;">当前筛选下暂无待处理错误</p>';
+          }
+        }
+
+        syncFilterTriggerLabel();
+        syncMenuCounts();
+        syncDocHighlights();
+      }
+
+      function renderPanel() {
+        syncFilterBar();
+        if (panelMode === "history") renderHistoryList();
+        else renderErrorsList();
+      }
+
+      function showToast(msg) {
+        toastEl.textContent = msg;
+        toastEl.classList.add("show");
+        clearTimeout(showToast._t);
+        showToast._t = setTimeout(function () {
+          toastEl.classList.remove("show");
+        }, 2200);
+      }
+
+      function showFixAllToast() {
+        toastFixAll.classList.remove("show");
+        void toastFixAll.offsetWidth;
+        toastFixAll.classList.add("show");
+        clearTimeout(showFixAllToast._t);
+        showFixAllToast._t = setTimeout(function () {
+          toastFixAll.classList.remove("show");
+        }, 3200);
+      }
+
+      function openProof() {
+        proofPanel.classList.add("open");
+        proofMask.classList.add("visible");
+        proofPanel.setAttribute("aria-hidden", "false");
+        btnOpenProof.classList.add("hidden");
+        panelMode = "errors";
+        renderPanel();
+        document.getElementById("readScroll").scrollTop = 0;
+      }
+
+      function closeProof() {
+        proofPanel.classList.remove("open");
+        proofMask.classList.remove("visible");
+        proofPanel.setAttribute("aria-hidden", "true");
+        filterMenu.classList.remove("open");
+        filterTrigger.classList.remove("open");
+        toastFixAll.classList.remove("show");
+        btnOpenProof.classList.remove("hidden");
+        panelMode = "errors";
+        syncFilterBar();
+      }
+
+      function tryCloseProof() {
+        var n = pendingCount();
+        if (n > 0) {
+          exitPendingNum.textContent = String(n);
+          exitDialog.classList.add("open");
+          return;
+        }
+        closeProof();
+      }
+
+      btnOpenProof.addEventListener("click", openProof);
+      proofMask.addEventListener("click", tryCloseProof);
+
+      btnProofBack.addEventListener("click", function (e) {
+        e.stopPropagation();
+        tryCloseProof();
+      });
+
+      document.getElementById("btnExitAnyway").addEventListener("click", function () {
+        exitDialog.classList.remove("open");
+        closeProof();
+      });
+
+      document.getElementById("btnStayProof").addEventListener("click", function () {
+        exitDialog.classList.remove("open");
+      });
+
+      filterTrigger.addEventListener("click", function (e) {
+        e.stopPropagation();
+        if (panelMode === "history") {
+          panelMode = "errors";
+          renderPanel();
+          return;
+        }
+        var open = filterMenu.classList.toggle("open");
+        filterTrigger.classList.toggle("open", open);
+        filterTrigger.setAttribute("aria-expanded", open ? "true" : "false");
+        syncMenuCounts();
+      });
+
+      filterMenu.addEventListener("click", function (e) {
+        e.stopPropagation();
+        var btn = e.target.closest("[data-filter]");
+        if (!btn) return;
+        currentFilter = btn.getAttribute("data-filter");
+        filterMenu.classList.remove("open");
+        filterTrigger.classList.remove("open");
+        filterTrigger.setAttribute("aria-expanded", "false");
+        renderPanel();
+      });
+
+      document.getElementById("btnHistory").addEventListener("click", function (e) {
+        e.stopPropagation();
+        panelMode = "history";
+        var fixed = fixedItemsOrdered();
+        if (fixed.length) selectedHistoryId = fixed[0].id;
+        renderPanel();
+      });
+
+      document.getElementById("btnUndoAll").addEventListener("click", function (e) {
+        e.stopPropagation();
+        items.forEach(function (i) {
+          if (status[i.id] === "fixed") status[i.id] = "pending";
+        });
+        showToast("演示：已全部撤销修改");
+        panelMode = "errors";
+        renderPanel();
+      });
+
+      document.addEventListener("click", function () {
+        filterMenu.classList.remove("open");
+        filterTrigger.classList.remove("open");
+        filterTrigger.setAttribute("aria-expanded", "false");
+      });
+
+      proofList.addEventListener("click", function (e) {
+        if (panelMode === "history") {
+          var undoOne = e.target.closest("[data-h-undo]");
+          var undoBat = e.target.closest("[data-h-batch]");
+          var hcard = e.target.closest(".hist-card");
+          if (undoOne) {
+            status[undoOne.getAttribute("data-h-undo")] = "pending";
+            showToast("已撤销本条修改");
+            if (!fixedItemsOrdered().length) panelMode = "errors";
+            renderPanel();
+            return;
+          }
+          if (undoBat) {
+            var bid = undoBat.getAttribute("data-h-batch");
+            var cur = items.filter(function (x) { return x.id === bid; })[0];
+            if (!cur) return;
+            items.forEach(function (i) {
+              if (status[i.id] === "fixed" && i.type === cur.type) status[i.id] = "pending";
+            });
+            showToast("演示：已撤销同类修改");
+            if (!fixedItemsOrdered().length) panelMode = "errors";
+            renderPanel();
+            return;
+          }
+          if (hcard && !undoOne && !undoBat) {
+            selectedHistoryId = hcard.getAttribute("data-hid");
+            renderPanel();
+            return;
+          }
+          return;
+        }
+
+        var card = e.target.closest(".err-card");
+        if (!card) return;
+        var id = card.getAttribute("data-id");
+        if (e.target.closest(".btn-s") || e.target.closest(".batch")) return;
+        selectedId = id;
+        renderPanel();
+      });
+
+      proofList.addEventListener("click", function (e) {
+        if (panelMode === "history") return;
+        var ig = e.target.closest("[data-act=\"ignore\"]");
+        var fx = e.target.closest("[data-act=\"fix\"]");
+        var bat = e.target.closest("[data-batch]");
+        if (bat) {
+          showToast("演示：已批量修正同类错误");
+          var same = items.filter(function (i) {
+            return i.type === items.find(function (x) { return x.id === bat.getAttribute("data-batch"); }).type && status[i.id] === "pending";
+          });
+          same.forEach(function (i) {
+            status[i.id] = "fixed";
+          });
+          renderPanel();
+          return;
+        }
+        if (ig) {
+          status[ig.getAttribute("data-id")] = "ignored";
+          showToast("已忽略");
+          renderPanel();
+          return;
+        }
+        if (fx) {
+          status[fx.getAttribute("data-id")] = "fixed";
+          showToast("已修正");
+          renderPanel();
+          return;
+        }
+      });
+
+      document.getElementById("btnFixAll").addEventListener("click", function () {
+        var before = pendingCount();
+        items.forEach(function (i) {
+          if (status[i.id] === "pending") status[i.id] = "fixed";
+        });
+        renderPanel();
+        if (before > 0) showFixAllToast();
+      });
+
+      docText.addEventListener("click", function (e) {
+        var span = e.target.closest(".err-span");
+        if (!span || span.classList.contains("is-done")) return;
+        var id = span.getAttribute("data-eid");
+        if (status[id] !== "pending") return;
+        selectedId = id;
+        if (!proofPanel.classList.contains("open")) openProof();
+        else {
+          panelMode = "errors";
+          renderPanel();
+        }
+        proofList.querySelector("[data-id=\"" + id + "\"]") &&
+          proofList.querySelector("[data-id=\"" + id + "\"]").scrollIntoView({ block: "nearest", behavior: "smooth" });
+      });
+
+      renderPanel();
+    })();
+  </script>
+</body>
+</html>
