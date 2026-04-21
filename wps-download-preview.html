@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>金山文档 | WPS云文档</title>
+  <style>
+    :root {
+      --blue: #5b86f5;
+      --blue-soft: #e8f0ff;
+      --word-blue: #2b5fcb;
+      --bg: #ffffff;
+      --line: #eeeeee;
+      --text: #1a1a1a;
+      --sub: #999999;
+      --footer-bg: #f7f7f7;
+      --btn-gray: #f0f0f0;
+      --banner-bg: #fff8e6;
+      --banner-border: #ffe4a8;
+      --sheet-bg: #f5f5f5;
+      --font: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: var(--font);
+      background: #222;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 12px;
+    }
+
+    .phone {
+      width: min(390px, 100%);
+      height: min(820px, 92vh);
+      background: var(--bg);
+      border-radius: 24px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .header {
+      flex-shrink: 0;
+      padding: 10px 8px 10px 4px;
+      border-bottom: 1px solid var(--line);
+      background: var(--bg);
+    }
+
+    .header-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 4px;
+    }
+
+    .icon-btn {
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      padding: 0;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .icon-btn:active {
+      background: rgba(0, 0, 0, 0.05);
+    }
+
+    .icon-btn svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .header-title {
+      flex: 1;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 0;
+      padding: 0 4px;
+      line-height: 1.35;
+    }
+
+    .header-pill {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      background: #f3f3f3;
+      border-radius: 999px;
+      padding: 4px 6px;
+      flex-shrink: 0;
+    }
+
+    .header-pill .icon-btn {
+      width: 34px;
+      height: 34px;
+    }
+
+    .preview-main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 24px 16px;
+      text-align: center;
+      min-height: 0;
+    }
+
+    .doc-icon {
+      width: 88px;
+      height: 88px;
+      border-radius: 20px;
+      background: linear-gradient(155deg, #4a8fff, var(--word-blue));
+      color: #fff;
+      font-size: 46px;
+      font-weight: 700;
+      display: grid;
+      place-items: center;
+      font-family: "Segoe UI", var(--font);
+      letter-spacing: -0.04em;
+      box-shadow: 0 10px 28px rgba(43, 95, 203, 0.35);
+      margin-bottom: 22px;
+    }
+
+    .file-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.45;
+      word-break: break-all;
+      margin: 0 0 10px;
+    }
+
+    .file-size {
+      font-size: 14px;
+      color: var(--sub);
+      margin: 0 0 18px;
+    }
+
+    .link-view {
+      border: none;
+      background: none;
+      padding: 0;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--blue);
+      cursor: pointer;
+      text-decoration: none;
+    }
+
+    .link-view:active {
+      opacity: 0.75;
+    }
+
+    .footer {
+      flex-shrink: 0;
+      background: var(--footer-bg);
+      border-top: 1px solid var(--line);
+      padding-bottom: env(safe-area-inset-bottom, 10px);
+    }
+
+    .error-banner {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 0 4px;
+      padding: 10px 14px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #444;
+      background: var(--banner-bg);
+      border-bottom: 1px solid var(--banner-border);
+      text-align: center;
+    }
+
+    .error-banner .n {
+      font-weight: 700;
+      color: #c97800;
+    }
+
+    .link-proofread {
+      display: inline;
+      padding: 0;
+      margin: 0;
+      border: none;
+      background: none;
+      font: inherit;
+      font-weight: 600;
+      color: var(--blue);
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .link-proofread:active {
+      opacity: 0.75;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      padding: 12px 16px 14px;
+      background: var(--bg);
+    }
+
+    .btn {
+      flex: 1;
+      padding: 14px 12px;
+      border-radius: 8px;
+      border: none;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-secondary {
+      background: var(--btn-gray);
+      color: var(--text);
+    }
+
+    .btn-primary {
+      background: var(--blue);
+      color: #fff;
+    }
+
+    .btn:active {
+      opacity: 0.92;
+      transform: scale(0.99);
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+      z-index: 50;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .sheet {
+      height: 52%;
+      min-height: 300px;
+      max-height: 85%;
+      background: var(--sheet-bg);
+      border-radius: 16px 16px 0 0;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+      box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+    }
+
+    .overlay.open .sheet {
+      transform: translateY(0);
+    }
+
+    .sheet-handle {
+      width: 36px;
+      height: 4px;
+      background: #ccc;
+      border-radius: 2px;
+      margin: 8px auto 4px;
+      flex-shrink: 0;
+    }
+
+    .sheet-head {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 6px 44px 12px;
+      position: relative;
+    }
+
+    .sheet-head-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .sheet-close {
+      position: absolute;
+      right: 8px;
+      top: 2px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      color: var(--sub);
+    }
+
+    .sheet-close:active {
+      background: rgba(0, 0, 0, 0.06);
+    }
+
+    .sheet-filters {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0 12px 10px;
+    }
+
+    .pill {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 13px;
+      border: none;
+      font-family: inherit;
+      cursor: pointer;
+    }
+
+    .pill-blue {
+      background: var(--blue-soft);
+      color: var(--blue);
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .pill-gray {
+      background: #e8e8e8;
+      color: #555;
+    }
+
+    .sheet-link {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--blue);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .sheet-cards {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 12px 16px;
+    }
+
+    .p-card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+      border: 1px solid #e8e8e8;
+    }
+
+    .p-card.active {
+      border-color: var(--blue);
+    }
+
+    .p-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .p-link {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--blue);
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .p-body {
+      font-size: 14px;
+      color: var(--sub);
+      margin-bottom: 10px;
+    }
+
+    .p-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .p-btn {
+      padding: 7px 18px;
+      border-radius: 20px;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .p-btn-ignore {
+      background: #ececec;
+      color: #555;
+    }
+
+    .p-btn-fix {
+      background: var(--blue);
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <div class="phone" id="phone">
+    <header class="header">
+      <div class="header-row">
+        <button type="button" class="icon-btn" aria-label="返回">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        </button>
+        <h1 class="header-title">金山文档 | WPS云文档</h1>
+        <div class="header-pill">
+          <button type="button" class="icon-btn" aria-label="更多">
+            <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+          </button>
+          <button type="button" class="icon-btn" aria-label="菜单">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="preview-main">
+      <div class="doc-icon" aria-hidden="true">W</div>
+      <p class="file-name">有错别字的日常文案.docx</p>
+      <p class="file-size">文件大小：8.66 KB</p>
+      <button type="button" class="link-view">查看文档</button>
+    </main>
+
+    <footer class="footer">
+      <div class="error-banner" role="status">
+        <span>当前文档发现 <span class="n" id="errCount">9</span> 处错误，前往</span>
+        <button type="button" class="link-proofread" id="openProofread" aria-haspopup="dialog">校对</button>
+        <span>处理</span>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-secondary">用WPS打开</button>
+        <button type="button" class="btn btn-primary">发送给好友</button>
+      </div>
+    </footer>
+
+    <div class="overlay" id="overlay" aria-hidden="true">
+      <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-head">
+          <h2 class="sheet-head-title" id="sheetTitle">中文校对</h2>
+          <button type="button" class="sheet-close" id="closeSheet" aria-label="关闭">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="sheet-filters">
+          <button type="button" class="pill pill-blue">
+            所有错误(<span id="sheetErrCount">9</span>)
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+          </button>
+          <button type="button" class="pill pill-gray">修改记录</button>
+          <button type="button" class="sheet-link">全部修正</button>
+        </div>
+        <div class="sheet-cards">
+          <div class="p-card active">
+            <div class="p-card-top">
+              <span>全半角检查</span>
+              <button type="button" class="p-link">修正同类错误</button>
+            </div>
+            <div class="p-body">半角「-」→ 全角「—」</div>
+            <div class="p-actions">
+              <button type="button" class="p-btn p-btn-ignore">忽略</button>
+              <button type="button" class="p-btn p-btn-fix">修正</button>
+            </div>
+          </div>
+          <div class="p-card">
+            <div class="p-card-top"><span>语序不当</span></div>
+            <div class="p-body">多元， → 多元</div>
+          </div>
+          <div class="p-card">
+            <div class="p-card-top"><span>成分残缺</span></div>
+            <div class="p-body">。 → 的称号。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      var overlay = document.getElementById("overlay");
+      var openBtn = document.getElementById("openProofread");
+      var closeBtn = document.getElementById("closeSheet");
+      var errCount = 9;
+
+      function openSheet() {
+        overlay.classList.add("open");
+        overlay.setAttribute("aria-hidden", "false");
+      }
+
+      function closeSheet() {
+        overlay.classList.remove("open");
+        overlay.setAttribute("aria-hidden", "true");
+      }
+
+      openBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+        openSheet();
+      });
+
+      closeBtn.addEventListener("click", closeSheet);
+
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay) closeSheet();
+      });
+
+      document.addEventListener("keydown", function (e) {
+        if (e.key === "Escape" && overlay.classList.contains("open")) closeSheet();
+      });
+
+      document.getElementById("errCount").textContent = String(errCount);
+      document.getElementById("sheetErrCount").textContent = String(errCount);
+    })();
+  </script>
+</body>
+</html>
