@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WPC 搜索 · 技能召回 + 空态 Demo</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
+      background: #5a6578;
+      min-height: 100vh;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      padding: 24px;
+    }
+    .backdrop {
+      width: 100%;
+      max-width: 640px;
+      background: #f0f1f3;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.25);
+      overflow: hidden;
+    }
+    .search-head {
+      padding: 12px 16px 10px;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid #e8e9eb;
+    }
+    .search-wrap { flex: 1; position: relative; }
+    .search-wrap .mag { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #999; font-size: 14px; pointer-events: none; }
+    .search-head input {
+      width: 100%;
+      border: 1px solid #d9d9d9;
+      border-radius: 8px;
+      padding: 8px 12px 8px 32px;
+      font-size: 14px;
+      outline: none;
+    }
+    .search-head input:focus { border-color: #1e6fff; }
+    .tab-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px 0 8px;
+      background: #fff;
+      border-bottom: 1px solid #e8e9eb;
+    }
+    .tabs {
+      display: flex;
+      gap: 0;
+      padding: 6px 0 0;
+      flex-wrap: wrap;
+      font-size: 12px;
+    }
+    .tab {
+      padding: 6px 10px 8px;
+      color: #666;
+      cursor: default;
+      border-bottom: 2px solid transparent;
+    }
+    .tab.on { color: #1e6fff; font-weight: 600; border-bottom-color: #1e6fff; }
+    .to-qa {
+      white-space: nowrap;
+      font-size: 13px;
+      color: #1e6fff;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      user-select: none;
+      padding-bottom: 6px;
+    }
+    .to-qa::before { content: "✦"; font-size: 10px; opacity: 0.7; }
+    .filter-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px 10px;
+      background: #f5f6f8;
+      font-size: 12px;
+      color: #666;
+      border-bottom: 1px solid #e8e9eb;
+    }
+    .filter-bar label { color: #999; }
+    .filter-bar select, .filter-bar .fake-sel {
+      font-size: 12px;
+      color: #333;
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      padding: 3px 6px;
+    }
+    .list {
+      padding: 12px 16px 20px;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
+    }
+    .hidden { display: none !important; }
+
+    /* 空态：区块标题 */
+    .section-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+    .section-head .h { font-size: 14px; font-weight: 600; color: #1e1e1e; }
+    .section-head .sub { float: right; }
+    .clear-hist { font-size: 12px; color: #999; display: flex; align-items: center; gap: 4px; cursor: pointer; border: none; background: none; padding: 0; }
+    .clear-hist:hover { color: #1e6fff; }
+    .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; }
+    .tag {
+      font-size: 12px; color: #4b5563; background: #f3f4f6; border: 1px solid #e5e7eb; border-radius: 999px;
+      padding: 5px 10px; cursor: pointer; user-select: none;
+    }
+    .tag:hover { background: #e8f0ff; border-color: #b8d4ff; color: #1e6fff; }
+
+    /* 热搜工具 + 技能库：同一栅格、同一样式，平级入口 */
+    .hot-tools {
+      display: grid;
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+      gap: 8px;
+    }
+    @media (max-width: 600px) {
+      .hot-tools { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (min-width: 601px) and (max-width: 700px) {
+      .hot-tools { grid-template-columns: repeat(3, 1fr); }
+    }
+    .ht-card {
+      background: #fafbfc; border: 1px solid #e8e9eb; border-radius: 8px; padding: 10px 6px; text-align: center;
+      cursor: pointer; transition: background 0.12s, border-color 0.12s;
+    }
+    .ht-card:hover { background: #f0f7ff; border-color: #1e6fff40; }
+    .ht-ico { font-size: 22px; line-height: 1.2; margin-bottom: 4px; }
+    .ht-name { font-size: 11px; color: #333; line-height: 1.25; }
+
+    /* 稻壳资源 */
+    .docer { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: 12px; color: #4b5563; }
+    .docer a { color: #333; text-decoration: none; }
+    .docer a:hover { color: #1e6fff; }
+    .docer .hot-badge { color: #ea580c; font-size: 11px; display: block; margin-bottom: 4px; }
+
+    .section {
+      background: #fff;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      padding: 12px 14px;
+      border: 1px solid #e8e9eb;
+    }
+    .section-title { font-size: 12px; color: #8c8c8c; margin-bottom: 8px; }
+    .row { font-size: 14px; color: #333; line-height: 1.4; }
+    .hint { font-size: 12px; color: #8c8c8c; margin-top: 6px; }
+    .fulltext-row { display: flex; align-items: center; gap: 8px; color: #b45309; font-size: 14px; }
+    .ft-icon { font-size: 12px; opacity: 0.85; }
+    .skill-row {
+      display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid #f0f0f0;
+    }
+    .skill-row:first-of-type { border-top: 0; padding-top: 0; }
+    .skill-name { font-size: 14px; color: #1e1e1e; font-weight: 500; }
+    .skill-desc { font-size: 12px; color: #8c8c8c; margin-top: 2px; }
+    .skill-go { font-size: 12px; color: #1e6fff; flex-shrink: 0; cursor: pointer; }
+    .skill-go:hover { text-decoration: underline; }
+    .weak-cta { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    .weak-cta .text { font-size: 14px; color: #333; }
+    .badge {
+      font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 4px; font-weight: 500;
+    }
+    .tpl-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+    .tpl { border: 1px solid #e8e9eb; border-radius: 6px; overflow: hidden; background: #fafafa; }
+    .tpl .ph { height: 64px; background: linear-gradient(135deg, #e2e4e8, #f5f5f5); }
+    .tpl .cap { padding: 6px; font-size: 11px; color: #333; }
+    .highlight { color: #ea580c; font-weight: 600; }
+    .footer-note { text-align: center; font-size: 11px; color: #8c8c8c; padding: 4px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div class="backdrop">
+    <div class="search-head">
+      <div class="search-wrap">
+        <span class="mag">🔍</span>
+        <input id="q" type="text" placeholder="开学季 点击 enter 回车键跳转" value="" />
+      </div>
+    </div>
+    <div class="tab-row">
+      <div class="tabs">
+        <span class="tab on">全部</span>
+        <span class="tab">云文档</span>
+        <span class="tab">AI 搜文档</span>
+        <span class="tab">此电脑</span>
+        <span class="tab">模板</span>
+        <span class="tab">文库</span>
+        <span class="tab">应用</span>
+        <span class="tab">技巧</span>
+        <span class="tab">全文检索</span>
+      </div>
+      <span class="to-qa">去问答</span>
+    </div>
+    <div class="filter-bar" id="filter-bar">
+      <span>云文档筛选</span>
+      <label>类型 <select><option>不限</option></select></label>
+      <label>创建者 <select><option>不限</option></select></label>
+      <label>时间 <select><option>不限</option></select></label>
+      <label>位置 <select><option>不限</option></select></label>
+    </div>
+    <div class="list">
+      <!-- 空态：未输入时露出技能与资源 -->
+      <div id="view-empty">
+        <div class="section">
+          <div class="section-head">
+            <span class="h">历史记录</span>
+            <button type="button" class="clear-hist" id="btn-clear-hist">🗑 清除</button>
+          </div>
+          <div class="tag-cloud" id="tag-cloud">
+            <span class="tag" data-fill="做同款">做同款</span>
+            <span class="tag" data-fill="埋点">埋点</span>
+            <span class="tag" data-fill="ai做同款">ai做同款</span>
+            <span class="tag" data-fill="内审">内审</span>
+            <span class="tag" data-fill="校对">校对</span>
+            <span class="tag" data-fill="周报">周报</span>
+            <span class="tag" data-fill="合同">合同</span>
+            <span class="tag" data-fill="简历">简历</span>
+            <span class="tag" data-fill="答辩">答辩</span>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><span class="h">热搜工具</span></div>
+          <div class="hot-tools" id="hot-tools">
+            <div class="ht-card" data-skill="AI 生成 PPT" data-kind="skill" title="演示：打开该技能">
+              <div class="ht-ico">P✨</div>
+              <div class="ht-name">AI 生成 PPT</div>
+            </div>
+            <div class="ht-card" data-skill="AI 生成毕业答辩 PPT" data-kind="skill">
+              <div class="ht-ico" style="color:#7c3aed">AI</div>
+              <div class="ht-name">AI 生成毕业答辩 PPT</div>
+            </div>
+            <div class="ht-card" data-skill="WPS 看图" data-kind="skill">
+              <div class="ht-ico">🖼</div>
+              <div class="ht-name">WPS 看图</div>
+            </div>
+            <div class="ht-card" data-skill="AI 生成简历" data-kind="skill">
+              <div class="ht-ico">📄✨</div>
+              <div class="ht-name">AI 生成简历</div>
+            </div>
+            <div class="ht-card" data-kind="library" title="浏览全库已上架技能">
+              <div class="ht-ico">📚</div>
+              <div class="ht-name">技能库</div>
+            </div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-head"><span class="h">稻壳资源</span></div>
+          <div class="docer" id="docer-list">
+            <div>
+              <span class="hot-badge">商城开学季</span>
+              <div><a href="javascript:void(0)">1. AIPPT</a></div>
+              <div><a href="javascript:void(0)">2. 支付窗</a></div>
+              <div><a href="javascript:void(0)">3. CAD 编辑器</a></div>
+            </div>
+            <div>
+              <div><a href="javascript:void(0)">4. 电商活动策划</a></div>
+              <div><a href="javascript:void(0)">5. 创客贴</a></div>
+              <div><a href="javascript:void(0)">6. 简历助手</a></div>
+              <div><a href="javascript:void(0)">7. 二级专题</a></div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-note">空态：不输入时展示；热搜区为「4 个具体技能 + 技能库」<b>同栅格平级</b>。输入后切换为下方结果流</div>
+      </div>
+
+      <!-- 有搜索词：原混排流 -->
+      <div id="view-results" class="hidden">
+        <div class="section">
+          <div class="section-title">云文档</div>
+          <div class="row" id="cloud-row">周报：移动端云 · 2 天前更新</div>
+          <div class="hint">/团队/产品/… 示意路径</div>
+        </div>
+        <div class="section">
+          <div class="fulltext-row">
+            <span class="ft-icon">搜</span>
+            <span>搜索全文带「<span id="ft-kw" class="highlight"></span>」的云文档</span>
+          </div>
+        </div>
+        <div class="section" id="skill-block">
+          <div class="section-title">相关技能 <span class="badge" id="mode-badge">强命中</span></div>
+          <div id="skill-content"></div>
+        </div>
+        <div class="section">
+          <div class="section-title">模板</div>
+          <div class="tpl-grid" id="tpl-wrap">
+            <div class="tpl"><div class="ph"></div><div class="cap" id="tpl-1">工作周报 简洁</div></div>
+            <div class="tpl"><div class="ph"></div><div class="cap" id="tpl-2">销售周报表</div></div>
+          </div>
+        </div>
+        <div class="footer-note">有词时：云文档 / 全文检索 / <b>相关技能</b>（强=具体弱=去库）/ 模板 · 含「周报」为强命中</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      const q = document.getElementById("q");
+      const viewEmpty = document.getElementById("view-empty");
+      const viewResults = document.getElementById("view-results");
+      const filterBar = document.getElementById("filter-bar");
+      const ftKw = document.getElementById("ft-kw");
+      const modeBadge = document.getElementById("mode-badge");
+      const skillContent = document.getElementById("skill-content");
+      const tpl1 = document.getElementById("tpl-1");
+      const tpl2 = document.getElementById("tpl-2");
+      const cloudRow = document.getElementById("cloud-row");
+
+      const STRONG_KEY = "周报";
+
+      const MOCK_SKILLS = [
+        { name: "工作周报", desc: "按事项生成一版可编辑结构" },
+        { name: "周报复盘", desc: "提炼问题与数据，给下周计划占位" }
+      ];
+
+      function isEmpty() {
+        return !((q.value || "").trim());
+      }
+
+      function setMode() {
+        const empty = isEmpty();
+        viewEmpty.classList.toggle("hidden", !empty);
+        viewResults.classList.toggle("hidden", empty);
+        /* 与产品一致时可在有结果时保留筛选条；此处始终展示 */
+        if (filterBar) filterBar.style.display = "flex";
+        if (!empty) renderResults();
+      }
+
+      function renderResults() {
+        const v = (q.value || "").trim();
+        if (ftKw) ftKw.textContent = v || "（空）";
+        if (cloudRow) cloudRow.textContent = "含「" + v + "」的云文档（示意）";
+
+        const isStrong = v.includes(STRONG_KEY);
+        if (isStrong) {
+          if (modeBadge) {
+            modeBadge.textContent = "强命中";
+            modeBadge.style.background = "#d1fae5";
+            modeBadge.style.color = "#047857";
+          }
+          if (tpl1) tpl1.innerHTML = "<span class=\"highlight\">工作周报</span> 简洁";
+          skillContent.innerHTML = MOCK_SKILLS
+            .map(
+              (s) => `
+          <div class="skill-row">
+            <div>
+              <div class="skill-name">${s.name}</div>
+              <div class="skill-desc">${s.desc}</div>
+            </div>
+            <span class="skill-go" data-name="${s.name}">打开</span>
+          </div>`
+            )
+            .join("");
+        } else {
+          if (modeBadge) {
+            modeBadge.textContent = "弱命中";
+            modeBadge.style.background = "#fef3c7";
+            modeBadge.style.color = "#b45309";
+          }
+          const safe = v.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+          if (tpl1) tpl1.textContent = (v || "工作") + " 相关模板（示意）";
+          if (tpl2) tpl2.textContent = "更多推荐模板";
+          skillContent.innerHTML = `
+            <div class="weak-cta">
+              <div>
+                <div class="text">可前往技能库继续查找能力</div>
+                <div class="hint">当前「${safe || "（有输入）"}」为弱匹配时展示兜底</div>
+              </div>
+              <span class="skill-go" id="to-lib">去技能库</span>
+            </div>
+          `;
+        }
+
+        skillContent.querySelectorAll(".skill-go[data-name]").forEach((el) => {
+          el.addEventListener("click", function () {
+            const name = this.getAttribute("data-name");
+            alert("演示：打开技能「" + name + "」\n实装时走与技能中心一致的调起。");
+          });
+        });
+        const toLib = skillContent.querySelector("#to-lib");
+        if (toLib) {
+          toLib.addEventListener("click", function () {
+            alert("演示：进入技能库\n实装时可携带 query: " + JSON.stringify(v) + "。");
+          });
+        }
+      }
+
+      q.addEventListener("input", setMode);
+      q.addEventListener("input", function () { if (!isEmpty()) renderResults(); });
+
+      document.getElementById("tag-cloud").addEventListener("click", function (e) {
+        const t = e.target.closest(".tag");
+        if (!t) return;
+        const fill = t.getAttribute("data-fill");
+        if (fill) {
+          q.value = fill;
+          setMode();
+          if (!isEmpty()) renderResults();
+        }
+      });
+
+      document.getElementById("btn-clear-hist").addEventListener("click", function () {
+        if (confirm("演示：是否清除本地历史？")) {
+          q.value = "";
+          setMode();
+        }
+      });
+
+      document.getElementById("hot-tools").addEventListener("click", function (e) {
+        const c = e.target.closest(".ht-card");
+        if (!c) return;
+        if (c.getAttribute("data-kind") === "library") {
+          alert("演示：进入「技能库」\n与单个热搜技能同一套路由；全量已上架可在此浏览。");
+          return;
+        }
+        const s = c.getAttribute("data-skill");
+        alert("演示：打开技能「" + s + "」\n与技能库为平级入口，仅落点不同。");
+      });
+
+      setMode();
+    })();
+  </script>
+</body>
+</html>
