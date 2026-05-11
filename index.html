@@ -1,12 +1,2005 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>crazycreate</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>今日拉了吗</title>
+<meta name="apple-mobile-web-app-title" content="拉了么">
+<meta name="theme-color" content="#000000">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Ctext x='256' y='380' font-size='280' text-anchor='middle'%3E%F0%9F%92%A9%3C/text%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Ctext x='90' y='135' font-size='100' text-anchor='middle'%3E%F0%9F%92%A9%3C/text%3E%3C/svg%3E">
+<style>
+/* ========== 调效果主要改这里 ========== */
+:root {
+  --cal-poop-icon: #94554d;
+  --bg: #000000;
+  --surface: #1c1c1e;
+  --surface-2: #2c2c2e;
+  --label: #ffffff;
+  --label-secondary: rgba(235, 235, 245, 0.6);
+  --label-tertiary: #8e8e93;
+  --separator: rgba(84, 84, 88, 0.65);
+  --accent: #34c759;
+  --accent-pressed: #30b350;
+  --danger: #ff453a;
+  --danger-pressed: #e0382e;
+  --today-ring: #34c759;
+  --radius-card: 14px;
+  --radius-btn: 9999px;
+  --space-page: 20px;
+  --space-section: 28px;
+  --emoji-hero: clamp(2.75rem, 12vw, 3.5rem);
+  --btn-height: 54px;
+  --font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Segoe UI", sans-serif;
+  --tap-scale: 0.97;
+  --tap-duration: 0.12s;
+  --tabbar-h: 52px;
+  --tabbar-float-gap: 12px;
+  --tabbar-radius: 22px;
+  --delete-bar-h: 56px;
+  /* 今日 / 回顾 共用：记录行字号与行距 */
+  --record-pad-x: 16px;
+  --record-pad-y: 14px;
+  --record-time-size: 1.0625rem;
+  --record-time-line: 1.25;
+  --record-sub-size: 0.875rem;
+  --record-sub-line: 1.2;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  min-height: 100%;
+  min-height: 100dvh;
+  color-scheme: dark;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--label);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body.select-active .app {
+  padding-bottom: calc(var(--tabbar-h) + var(--delete-bar-h) + 40px + var(--tabbar-float-gap) + env(safe-area-inset-bottom, 0px));
+}
+
+.app {
+  min-height: 100%;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-page);
+  padding-bottom: calc(var(--tabbar-h) + 40px + var(--tabbar-float-gap) + env(safe-area-inset-bottom, 0px));
+}
+
+/* ----- 今日 ----- */
+.today-view {
+  display: flex;
+  flex-direction: column;
+}
+
+.today-hero-stack {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-evenly;
+  align-items: stretch;
+  padding-block: clamp(28px, 6.5vh, 52px);
+  /* 首屏略撑开上方区域，列表在下方整页滚动 */
+  min-height: clamp(340px, 56dvh, 548px);
+}
+
+.date-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--label-secondary);
+  margin-bottom: clamp(24px, 4.5vh, 42px);
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.status-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(38px, 7.5vh, 62px);
+  margin-bottom: 0;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.status-line {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: var(--label);
+  letter-spacing: -0.02em;
+  max-width: 20rem;
+  line-height: 1.25;
+  order: -1;
+}
+
+.status-block .hero-wrap {
+  order: 0;
+}
+
+.hero-wrap {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: calc(var(--emoji-hero) + 8px);
+}
+
+.hero-inner {
+  position: relative;
+  display: inline-block;
+}
+
+.hero-emoji {
+  font-size: var(--emoji-hero);
+  line-height: 1;
+  display: block;
+}
+
+.hero-badge {
+  position: absolute;
+  right: -6px;
+  bottom: -2px;
+  min-width: 1.65rem;
+  padding: 3px 7px;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  border-radius: 999px;
+  line-height: 1.1;
+  border: 1px solid var(--separator);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+}
+
+.hero-badge[hidden] {
+  display: none !important;
+}
+
+.poop-btn {
+  width: 100%;
+  height: var(--btn-height);
+  flex-shrink: 0;
+  margin-top: clamp(36px, 6.5vh, 58px);
+  border: none;
+  border-radius: var(--radius-btn);
+  background: var(--accent);
+  color: #fff;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: -0.02em;
+  cursor: pointer;
+  transition: transform var(--tap-duration) cubic-bezier(0.34, 1.2, 0.64, 1), background var(--tap-duration) ease;
+  box-shadow: none;
+}
+
+.poop-btn:active {
+  transform: scale(var(--tap-scale));
+  background: var(--accent-pressed);
+}
+
+.section-title {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--label-tertiary);
+  letter-spacing: 0.02em;
+  margin: var(--space-section) 0 10px;
+}
+
+.today-view .section-title {
+  margin: clamp(12px, 3vh, 20px) 0 10px;
+  padding: 0 var(--record-pad-x);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.records-section {
+  flex-shrink: 0;
+  /* 主按钮与「今天」列表之间：再下移约一行 */
+  margin-top: clamp(28px, 4.2vh, 44px);
+}
+
+.records-section[hidden] {
+  display: none !important;
+}
+
+.records-card {
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+/* 今日记录：不用圆角灰底容器，与页面一体纵向铺开，靠整体上滑查看 */
+.today-view .records-card {
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.record-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: var(--record-pad-y) var(--record-pad-x);
+  border-bottom: 0.5px solid var(--separator);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.record-row:last-child { border-bottom: none; }
+
+.record-row.select-mode-active {
+  cursor: pointer;
+}
+
+.record-row.selected {
+  background: rgba(52, 199, 89, 0.12);
+}
+
+.record-check {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--label-tertiary);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: transparent;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.record-row.select-mode-active .record-check {
+  color: transparent;
+}
+
+.record-row.select-mode-active.selected .record-check {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.record-row.select-mode-active.selected .record-check::after {
+  content: "✓";
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.record-row:not(.select-mode-active) .record-check {
+  display: none;
+}
+
+.record-main {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  min-width: 0;
+}
+
+.record-time {
+  font-size: var(--record-time-size);
+  font-weight: 500;
+  line-height: var(--record-time-line);
+}
+
+.record-sub {
+  font-size: var(--record-sub-size);
+  line-height: var(--record-sub-line);
+  color: var(--label-secondary);
+}
+
+/* ----- 日历 ----- */
+.cal-inner { padding-bottom: env(safe-area-inset-bottom, 0px); }
+.calendar-view { display: none; }
+
+.cal-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.cal-toolbar button {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 1.5rem;
+  font-weight: 400;
+  padding: 8px 14px;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1;
+}
+
+.cal-toolbar .month-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px 4px;
+}
+
+.cal-grid .day-name {
+  text-align: center;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--label-tertiary);
+  padding: 4px 0 10px;
+}
+
+.cal-grid .day {
+  position: relative;
+  text-align: center;
+  aspect-ratio: 1;
+  max-height: 56px;
+  min-height: 46px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+  transition: background 0.15s ease;
+  overflow: visible;
+}
+
+.cal-grid .day.empty { visibility: hidden; pointer-events: none; }
+
+.cal-grid .day .d-poop {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -52%);
+  width: clamp(30px, 9vw, 40px);
+  height: clamp(30px, 9vw, 40px);
+  line-height: 0;
+  color: var(--cal-poop-icon);
+  opacity: 0.98;
+  pointer-events: none;
+  user-select: none;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.35));
+}
+
+.cal-grid .day .d-poop svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+}
+
+.cal-grid .day .d-poop path {
+  fill: currentColor;
+}
+
+.cal-grid .day:not(.has-poop) .d-num {
+  position: relative;
+  z-index: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--label);
+  line-height: 1;
+  text-shadow: none;
+}
+
+.cal-grid .day.has-poop .d-num {
+  position: relative;
+  z-index: 1;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--label);
+  line-height: 1;
+  margin-top: 2px;
+  text-shadow:
+    -1px 0 3px rgba(0, 0, 0, 0.9),
+    1px 0 3px rgba(0, 0, 0, 0.9),
+    0 0 5px rgba(0, 0, 0, 0.85),
+    0 1px 2px rgba(0, 0, 0, 0.75);
+}
+
+.cal-grid .day.today {
+  box-shadow: inset 0 0 0 1.5px var(--today-ring);
+}
+
+.cal-grid .day.selected {
+  background: var(--surface-2);
+}
+
+.cal-detail {
+  margin-top: 20px;
+  background: var(--surface);
+  border-radius: var(--radius-card);
+  padding: 0;
+  display: none;
+  overflow: hidden;
+}
+
+.cal-detail.visible { display: block; }
+
+.cal-detail .d-head {
+  font-size: 0.875rem;
+  color: var(--label-secondary);
+  margin-bottom: 0;
+  padding: 16px var(--record-pad-x) 12px;
+  font-weight: 500;
+}
+
+.cal-detail .d-line {
+  font-size: 0.9375rem;
+  padding: 8px var(--record-pad-x);
+  border-top: 0.5px solid var(--separator);
+  color: var(--label);
+}
+
+.cal-detail .d-line:first-of-type { border-top: none; padding-top: 0; }
+.cal-detail .d-empty {
+  color: var(--label-tertiary);
+  font-size: 0.9375rem;
+  padding: 0 var(--record-pad-x) 16px;
+}
+
+/* 回顾详情内列表：与外层灰底合一，避免内层再把底角切成直角 */
+.cal-detail .records-card.cal-detail-records {
+  margin-top: 10px;
+  background: transparent;
+  border-radius: 0;
+  overflow: visible;
+}
+
+.cal-detail-footer {
+  margin-top: 0;
+  padding: 12px var(--record-pad-x) 16px;
+  border-top: 0.5px solid var(--separator);
+}
+
+.cal-detail-footer[hidden] {
+  display: none !important;
+}
+
+.backfill-btn {
+  width: 100%;
+  height: 46px;
+  border-radius: 12px;
+  border: none;
+  background: var(--surface-2);
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.backfill-btn:active {
+  opacity: 0.85;
+}
+
+/* 补拉半窗 */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.48);
+  z-index: 25;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.sheet-backdrop.is-open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.sheet-panel {
+  position: fixed;
+  left: 50%;
+  right: auto;
+  transform: translate(-50%, 100%);
+  bottom: 0;
+  width: 100%;
+  max-width: 420px;
+  background: var(--surface);
+  border-radius: 16px 16px 0 0;
+  padding: 8px 20px calc(20px + env(safe-area-inset-bottom, 0px));
+  z-index: 26;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.35);
+  border-top: 0.5px solid var(--separator);
+  transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.sheet-panel.is-open {
+  transform: translate(-50%, 0);
+}
+
+.sheet-grab {
+  width: 36px;
+  height: 5px;
+  border-radius: 3px;
+  background: var(--separator);
+  margin: 4px auto 14px;
+  opacity: 0.85;
+}
+
+.sheet-title {
+  font-size: 1.0625rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 18px;
+  letter-spacing: -0.02em;
+}
+
+.sheet-time-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 52px;
+  padding: 10px 16px;
+  margin-bottom: 22px;
+  background: var(--surface-2);
+  border-radius: var(--radius-card);
+  border: 0.5px solid var(--separator);
+  box-sizing: border-box;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sheet-time-label {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  color: var(--label);
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+
+.sheet-time-native {
+  flex: 0 0 auto;
+  min-width: 6.5rem;
+  height: 40px;
+  padding: 0 4px 0 8px;
+  margin: 0;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--label);
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-family: inherit;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.sheet-time-native::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.45);
+  cursor: pointer;
+  padding: 4px;
+  margin-left: 2px;
+}
+
+.sheet-time-native:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.35);
+}
+
+.sheet-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.sheet-actions button {
+  flex: 1;
+  height: 48px;
+  border-radius: 12px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+
+.sheet-actions .sheet-cancel {
+  background: var(--surface-2);
+  color: var(--label);
+}
+
+.sheet-actions .sheet-confirm {
+  background: var(--accent);
+  color: #fff;
+}
+
+.sheet-actions .sheet-cancel:active,
+.sheet-actions .sheet-confirm:active {
+  opacity: 0.88;
+}
+
+/* ----- 删除条 ----- */
+.delete-bar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--tabbar-h) + var(--tabbar-float-gap) + env(safe-area-inset-bottom, 0px));
+  width: 100%;
+  max-width: 420px;
+  height: var(--delete-bar-h);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-top: 0.5px solid var(--separator);
+  z-index: 12;
+  box-sizing: border-box;
+}
+
+.delete-bar[hidden] {
+  display: none !important;
+}
+
+.delete-bar button {
+  font-family: inherit;
+  font-size: 1.0625rem;
+  font-weight: 600;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 10px 8px;
+  border-radius: 8px;
+}
+
+.delete-bar-cancel {
+  color: var(--accent);
+}
+
+.delete-bar-del {
+  color: var(--danger);
+}
+
+.delete-bar-del:disabled {
+  color: var(--label-tertiary);
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+/* ----- 底栏（浮动圆角胶囊） ----- */
+.tabbar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--tabbar-float-gap) + env(safe-area-inset-bottom, 0px));
+  width: calc(100% - 36px);
+  max-width: calc(420px - 36px);
+  min-height: var(--tabbar-h);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  backdrop-filter: saturate(160%) blur(20px);
+  -webkit-backdrop-filter: saturate(160%) blur(20px);
+  border: 0.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--tabbar-radius);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.35),
+    0 1px 0 rgba(255, 255, 255, 0.06) inset;
+  z-index: 10;
+  box-sizing: border-box;
+}
+
+.tabbar button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--label-tertiary);
+  padding: 12px 10px;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.tabbar button:active {
+  transform: scale(0.98);
+}
+
+.tabbar button.active {
+  color: var(--accent);
+  font-weight: 600;
+  background: rgba(52, 199, 89, 0.18);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.08) inset;
+}
+
+.row-enter {
+  animation: rowIn 0.2s ease forwards;
+}
+@keyframes rowIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ----- 多事项：顶部切换 ----- */
+.tracker-header {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+.tracker-switch {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: var(--surface);
+  border: 0.5px solid var(--separator);
+  color: inherit;
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  min-width: 0;
+  transition: transform var(--tap-duration) ease, opacity 0.15s ease;
+}
+.tracker-switch:active {
+  transform: scale(0.98);
+  opacity: 0.92;
+}
+.tracker-switch-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.tracker-switch-name {
+  flex: 1;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tracker-switch-chev {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  color: var(--label-tertiary);
+  opacity: 0.9;
+}
+#trackerPickerBackdrop { z-index: 28; }
+#trackerPickerSheet { z-index: 29; }
+#trackerFormBackdrop { z-index: 30; }
+#trackerFormSheet { z-index: 31; }
+.sheet-panel-tall {
+  max-height: min(72vh, 560px);
+  display: flex;
+  flex-direction: column;
+}
+.tracker-list-wrap {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  margin: 0 -4px;
+  padding: 0 4px 8px;
+}
+.tracker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px;
+  margin-bottom: 8px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 0.5px solid transparent;
+}
+.tracker-row.is-active {
+  border-color: rgba(52, 199, 89, 0.45);
+  background: rgba(52, 199, 89, 0.08);
+}
+.tracker-row-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  padding: 0;
+}
+.tracker-row-emoji { font-size: 1.35rem; line-height: 1; }
+.tracker-row-name {
+  font-size: 1rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tracker-row-edit {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--label-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.tracker-row-edit:active { opacity: 0.65; }
+.add-tracker-row {
+  width: 100%;
+  padding: 14px;
+  margin-top: 4px;
+  border-radius: 12px;
+  border: 1px dashed var(--separator);
+  background: transparent;
+  color: var(--accent);
+  font-size: 1rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.form-field { margin-bottom: 16px; }
+.form-field label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--label-tertiary);
+  margin-bottom: 8px;
+}
+.form-field input[type="text"] {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 0.5px solid var(--separator);
+  background: var(--surface-2);
+  color: var(--label);
+  font-size: 1.0625rem;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.form-field input:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(52, 199, 89, 0.35);
+}
+.icon-picker-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--label-tertiary);
+  margin-bottom: 10px;
+}
+.icon-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.icon-pick-btn {
+  aspect-ratio: 1;
+  max-height: 76px;
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background: var(--surface-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.icon-pick-btn svg {
+  width: 100%;
+  height: 100%;
+  max-height: 44px;
+  display: block;
+}
+.icon-pick-btn.selected {
+  border-color: var(--accent);
+  background: rgba(52, 199, 89, 0.12);
+}
+.form-delete-btn {
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--danger);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+.form-delete-btn:active { opacity: 0.75; }
+.form-delete-btn[hidden] { display: none !important; }
+</style>
 </head>
 <body>
-  <h1>Hello GitHub Pages</h1>
-  <p>站点已就绪。</p>
+
+<div class="app">
+  <header class="tracker-header">
+    <button type="button" class="tracker-switch" id="trackerSwitchBtn" aria-haspopup="dialog" aria-expanded="false">
+      <span class="tracker-switch-emoji" id="trackerSwitchEmoji">💩</span>
+      <span class="tracker-switch-name" id="trackerSwitchName">拉了么</span>
+      <span class="tracker-switch-chev" aria-hidden="true">▼</span>
+    </button>
+  </header>
+
+  <div class="today-view" id="todayView">
+    <div class="today-hero-stack">
+      <div class="date-label" id="todayDate"></div>
+      <div class="status-block">
+        <p class="status-line" id="statusLine"></p>
+        <div class="hero-wrap" id="heroWrap" aria-hidden="true">
+          <div class="hero-inner">
+            <span class="hero-emoji" id="heroEmoji" role="img" aria-hidden="true"></span>
+            <span class="hero-badge" id="heroBadge" hidden></span>
+          </div>
+        </div>
+      </div>
+      <button type="button" class="poop-btn" id="poopBtn">拉了！</button>
+    </div>
+
+    <div class="records-section" id="recordsSection" hidden>
+      <div class="section-title">今天</div>
+      <div class="records-card" id="recordsCard"></div>
+    </div>
+  </div>
+
+  <div class="calendar-view cal-inner" id="calendarView">
+    <div class="cal-toolbar">
+      <button type="button" id="prevMonth" aria-label="上月">‹</button>
+      <div class="month-title" id="calMonth"></div>
+      <button type="button" id="nextMonth" aria-label="下月">›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-detail" id="calDetail">
+      <div class="d-head" id="detailDate"></div>
+      <div id="detailBody"></div>
+      <div class="cal-detail-footer" id="detailFooter" hidden></div>
+    </div>
+  </div>
+</div>
+
+<div class="delete-bar" id="deleteBar" hidden>
+  <button type="button" class="delete-bar-cancel" id="deleteCancel">取消</button>
+  <button type="button" class="delete-bar-del" id="deleteConfirm" disabled>删除</button>
+</div>
+
+<nav class="tabbar">
+  <button type="button" class="active" id="navToday">🚽 今日</button>
+  <button type="button" id="navCal">📅 回顾</button>
+</nav>
+
+<div class="sheet-backdrop" id="backfillBackdrop" aria-hidden="true"></div>
+<div class="sheet-panel" id="backfillSheet" role="dialog" aria-modal="true" aria-labelledby="backfillSheetTitle">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <h2 class="sheet-title" id="backfillSheetTitle">补拉</h2>
+  <label class="sheet-time-row" for="backfillTime">
+    <span class="sheet-time-label" id="backfillTimeLabel">💩时间</span>
+    <input type="time" class="sheet-time-native" id="backfillTime" value="10:00">
+  </label>
+  <div class="sheet-actions">
+    <button type="button" class="sheet-cancel" id="backfillCancel">取消</button>
+    <button type="button" class="sheet-confirm" id="backfillConfirm">确定</button>
+  </div>
+</div>
+
+<div class="sheet-backdrop" id="trackerPickerBackdrop" aria-hidden="true"></div>
+<div class="sheet-panel sheet-panel-tall" id="trackerPickerSheet" role="dialog" aria-modal="true" aria-labelledby="trackerPickerTitle">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <h2 class="sheet-title" id="trackerPickerTitle">我的事项</h2>
+  <div class="tracker-list-wrap" id="trackerListWrap"></div>
+  <button type="button" class="add-tracker-row" id="addTrackerOpenBtn">＋ 添加事项</button>
+</div>
+
+<div class="sheet-backdrop" id="trackerFormBackdrop" aria-hidden="true"></div>
+<div class="sheet-panel" id="trackerFormSheet" role="dialog" aria-modal="true" aria-labelledby="trackerFormTitle">
+  <div class="sheet-grab" aria-hidden="true"></div>
+  <h2 class="sheet-title" id="trackerFormTitle">添加事项</h2>
+  <div class="form-field">
+    <label for="trackerNameInput">名称</label>
+    <input type="text" id="trackerNameInput" maxlength="24" placeholder="例如：早睡了么" autocomplete="off">
+  </div>
+  <div class="form-field">
+    <label for="trackerEmojiInput">表情符号（今日大图）</label>
+    <input type="text" id="trackerEmojiInput" maxlength="8" placeholder="例如：🌙" autocomplete="off">
+  </div>
+  <p class="icon-picker-label">日历上的图标</p>
+  <div class="icon-picker-grid" id="iconPickerGrid" role="listbox" aria-label="日历图标"></div>
+  <div class="sheet-actions" style="margin-top: 20px;">
+    <button type="button" class="sheet-cancel" id="trackerFormCancel">取消</button>
+    <button type="button" class="sheet-confirm" id="trackerFormSave">保存</button>
+  </div>
+  <button type="button" class="form-delete-btn" id="trackerFormDelete" hidden>删除此事项</button>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'poop-tracker-data';
+  const DATA_VERSION = 2;
+  const DEFAULT_TRACKER_ID = 'trk-poop';
+  const PROFILE_DATA_PREFIX = 'poop-tracker-data:';
+  const PROFILE_META_KEY = 'poop-tracker-active-profile';
+  const LONG_PRESS_MS = 480;
+
+  /**
+   * 内置日历格图标库（用户从网格里选 iconId）
+   * poop 使用原有 1024 viewBox；其余为 24×24，fill=currentColor
+   */
+  const ICON_LIBRARY = {
+    poop: { label: '便便', color: '#94554d', kind: 'poop' },
+    moon: {
+      label: '月亮',
+      color: '#90CAF9',
+      path:
+        '<path fill="currentColor" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>',
+    },
+    sun: {
+      label: '太阳',
+      color: '#FFD54F',
+      path:
+        '<path fill="currentColor" fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/>',
+    },
+    droplet: {
+      label: '水滴',
+      color: '#64B5F6',
+      path:
+        '<path fill="currentColor" d="M12 2.69l5.66 5.66a8 8 0 11-11.31 0L12 2.69z"/>',
+    },
+    heart: {
+      label: '心形',
+      color: '#E57373',
+      path:
+        '<path fill="currentColor" d="M12 21a1 1 0 01-.71-.29l-7.77-7.78a5.5 5.5 0 017.78-7.78 5.5 5.5 0 017.78 7.78l-7.77 7.78a1 1 0 01-.71.29z"/>',
+    },
+    star: {
+      label: '星星',
+      color: '#FFD54F',
+      path:
+        '<path fill="currentColor" d="M12 2l2.9 6.26L22 9.8l-5 4.86L18.18 22 12 18.77 5.82 22 7 14.66 2 9.8l7.1-1.54L12 2z"/>',
+    },
+    leaf: {
+      label: '叶子',
+      color: '#81C784',
+      path:
+        '<path fill="currentColor" d="M17 8C8 10 6 16 6 21h2c0-4 2-9 9-11 1-.3 2-.7 3-1.2C14 5 11 4 8 4c0 3 2 6 5 8 2-2 4-4 4-4z"/>',
+    },
+    flame: {
+      label: '火焰',
+      color: '#FF7043',
+      path:
+        '<path fill="currentColor" d="M12 2c1 3 4 5 4 9 0 3-2 6-4 7-2-1-4-4-4-7 0-4 3-6 4-9zm0 18c-3-2-5-5-5-9 0-2 .5-4 1.5-5.5C8 8 9 11 12 13c3-2 4-5 3.5-7.5C16.5 7 17 9 17 11c0 4-2 7-5 9z"/>',
+    },
+    bolt: {
+      label: '闪电',
+      color: '#FFEE58',
+      path:
+        '<path fill="currentColor" d="M11 21h4l2-10h5L13 3v8H9l2 10z"/>',
+    },
+    bed: {
+      label: '睡眠',
+      color: '#B39DDB',
+      path:
+        '<path fill="currentColor" d="M20 10V7a2 2 0 00-2-2H6a2 2 0 00-2 2v3H3v10h2v-2h14v2h2V10h-1zm-9-1H7V7h4v2zm6 0h-4V7h4v2z"/>',
+    },
+    cup: {
+      label: '杯子',
+      color: '#BCAAA4',
+      path:
+        '<path fill="currentColor" d="M6 3v8c0 2.97 2.16 5.43 5 5.91V21h2v-4.09c2.84-.48 5-2.94 5-5.91V3H6zm10 8c0 2.21-1.79 4-4 4s-4-1.79-4-4V5h8v6z"/>',
+    },
+    pill: {
+      label: '胶囊',
+      color: '#4DD0E1',
+      path:
+        '<path fill="currentColor" d="M4.22 15.78l7-7a4 4 0 015.66 5.66l-7 7a4 4 0 01-5.66-5.66zm2.83 2.83a2 2 0 002.83 0l7-7a2 2 0 00-2.83-2.83l-7 7a2 2 0 000 2.83z"/>',
+    },
+    bike: {
+      label: '运动',
+      color: '#4FC3F7',
+      path:
+        '<path fill="currentColor" d="M15.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM5 12c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5S3.1 13.5 5 13.5 8.5 15.1 8.5 17 6.9 20.5 5 20.5zm14.5-8.5c-2.8 0-5 2.2-5 5s2.2 5 5 5 5-2.2 5-5-2.2-5-5-5zm0 8.5c-1.9 0-3.5-1.6-3.5-3.5s1.6-3.5 3.5-3.5 3.5 1.6 3.5 3.5-1.6 3.5-3.5 3.5zM13 7h4l2 4h-4z"/>',
+    },
+  };
+
+  const POOP_SVG_INNER =
+    '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false"><g transform="translate(0 -58)"><path fill="currentColor" d="M621.568 262.016h77.984c51.104 0 92.544 50.336 92.544 112.448 0 33.376-12 63.36-31.008 83.968h3.008c68.384 0 123.808 54.656 123.808 122.08a120.64 120.64 0 0 1-29.376 78.976C917.152 673.952 960 719.04 960 772.288c0 64.96-63.712 117.76-142.08 117.76H206.08c-78.368 0-142.08-52.8-142.08-117.76 0-51.424 40-95.264 95.584-111.264a120.672 120.672 0 0 1-30.752-80.544c0-67.424 55.424-122.08 123.808-122.08h3.008c-19.008-20.608-31.008-50.592-31.008-83.968 0-62.08 41.44-112.448 92.544-112.448h116.064c64.096-31.36 112.672-121.184 113.28-122.24a10.976 10.976 0 0 1 7.68-5.664 11.2 11.2 0 0 1 9.28 2.432c47.68 40.352 58.72 79.232 59.52 104.736 0.256 6.944-0.256 13.888-1.44 20.736z"/></g></svg>';
+
+  function calDayIconMarkup(iconId) {
+    const meta = ICON_LIBRARY[iconId] || ICON_LIBRARY.poop;
+    const color = meta.color;
+    if (meta.kind === 'poop' || iconId === 'poop') {
+      return (
+        '<span class="d-poop" style="color:' +
+        color +
+        '" aria-hidden="true">' +
+        POOP_SVG_INNER +
+        '</span>'
+      );
+    }
+    return (
+      '<span class="d-poop" style="color:' +
+      color +
+      '" aria-hidden="true"><svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false">' +
+      meta.path +
+      '</svg></span>'
+    );
+  }
+
+  function foldInProfileDataOnce() {
+    try {
+      if (localStorage.getItem(STORAGE_KEY)) return;
+      let blob = null;
+      const metaRaw = localStorage.getItem(PROFILE_META_KEY);
+      if (metaRaw) {
+        const meta = JSON.parse(metaRaw);
+        if (meta && meta.id) blob = localStorage.getItem(PROFILE_DATA_PREFIX + meta.id);
+      }
+      if (!blob) {
+        const found = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.indexOf(PROFILE_DATA_PREFIX) === 0) found.push(k);
+        }
+        if (found.length === 1) blob = localStorage.getItem(found[0]);
+      }
+      if (blob) localStorage.setItem(STORAGE_KEY, blob);
+    } catch (e) {}
+  }
+
+  foldInProfileDataOnce();
+
+  function defaultState() {
+    return {
+      version: DATA_VERSION,
+      trackers: [
+        { id: DEFAULT_TRACKER_ID, name: '拉了么', emoji: '💩', iconId: 'poop' },
+      ],
+      activeTrackerId: DEFAULT_TRACKER_ID,
+      records: {},
+    };
+  }
+
+  function looksLikeLegacyDayMap(obj) {
+    if (!obj || typeof obj !== 'object') return false;
+    const keys = Object.keys(obj);
+    if (keys.length === 0) return false;
+    return keys.some(function (k) {
+      return /^\d{4}-\d{2}-\d{2}$/.test(k);
+    });
+  }
+
+  function migratePayload(parsed) {
+    if (parsed && parsed.version === DATA_VERSION && Array.isArray(parsed.trackers)) {
+      return parsed;
+    }
+    const st = defaultState();
+    if (parsed && typeof parsed === 'object' && looksLikeLegacyDayMap(parsed)) {
+      st.records[DEFAULT_TRACKER_ID] = parsed;
+    }
+    return st;
+  }
+
+  function loadAppState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return defaultState();
+      return migratePayload(JSON.parse(raw));
+    } catch (e) {
+      return defaultState();
+    }
+  }
+
+  function saveAppState(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function getActiveTracker(state) {
+    const t = state.trackers.find(function (x) {
+      return x.id === state.activeTrackerId;
+    });
+    return t || state.trackers[0];
+  }
+
+  function getTrackerRecords(state, trackerId) {
+    if (!state.records[trackerId]) state.records[trackerId] = {};
+    return state.records[trackerId];
+  }
+
+  function genTrackerId() {
+    return 'trk-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+  }
+
+  let currentYear;
+  let currentMonth;
+  let selectedCalendarDate = null;
+
+  let recordSelectMode = false;
+  let recordSelectTargetDate = null;
+  let selectedIndices = new Set();
+  let longPressTimer = null;
+  let suppressRowClicksUntil = 0;
+  let pointerDownEl = null;
+
+  let formEditId = null;
+  let formSelectedIconId = 'moon';
+
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }
+  function timeStr() {
+    const d = new Date();
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  }
+
+  function formatTodayLabel() {
+    const d = new Date();
+    const w = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+    return `${w} · ${d.getMonth() + 1}月${d.getDate()}日`;
+  }
+
+  function isPastDate(ds) {
+    return ds < todayStr();
+  }
+
+  function isDefaultPoopTracker(t) {
+    return t && t.id === DEFAULT_TRACKER_ID;
+  }
+
+  /** 今日头部：便便保留原版文案；其它事项用通用模板 */
+  function todayHeadUI(tracker, count) {
+    if (isDefaultPoopTracker(tracker)) {
+      if (count <= 0) {
+        return { title: '今日拉了吗', face: '🤨', badge: null, btn: '拉了！' };
+      }
+      if (count === 1) {
+        return { title: '拉了', face: '😄', badge: '×1', btn: '又拉了' };
+      }
+      if (count === 2) {
+        return { title: '又拉了', face: '😳', badge: '×2', btn: '又拉了' };
+      }
+      return { title: '拉累了', face: '😢', badge: '×' + count, btn: '又拉了' };
+    }
+    const em = tracker.emoji || '📝';
+    if (count <= 0) {
+      return { title: '今日' + tracker.name, face: em, badge: null, btn: '记一笔' };
+    }
+    if (count === 1) {
+      return { title: '今天 1 次', face: em, badge: '×1', btn: '再记一笔' };
+    }
+    return { title: '今天 ' + count + ' 次', face: em, badge: '×' + count, btn: '再记一笔' };
+  }
+
+  function renderTrackerHeader() {
+    const state = loadAppState();
+    const t = getActiveTracker(state);
+    document.getElementById('trackerSwitchEmoji').textContent = t.emoji || '💩';
+    document.getElementById('trackerSwitchName').textContent = t.name || '事项';
+  }
+
+  function openBackfillSheet() {
+    const state = loadAppState();
+    const t = getActiveTracker(state);
+    setSelectMode(false);
+    document.getElementById('backfillTime').value = '10:00';
+    document.getElementById('backfillSheetTitle').textContent =
+      isDefaultPoopTracker(t) ? '补拉' : '补记';
+    document.getElementById('backfillTimeLabel').textContent =
+      isDefaultPoopTracker(t) ? '💩时间' : '时间';
+    document.getElementById('backfillBackdrop').classList.add('is-open');
+    document.getElementById('backfillSheet').classList.add('is-open');
+    document.getElementById('backfillBackdrop').setAttribute('aria-hidden', 'false');
+  }
+
+  function closeBackfillSheet() {
+    document.getElementById('backfillBackdrop').classList.remove('is-open');
+    document.getElementById('backfillSheet').classList.remove('is-open');
+    document.getElementById('backfillBackdrop').setAttribute('aria-hidden', 'true');
+  }
+
+  function closeTrackerPicker() {
+    document.getElementById('trackerPickerBackdrop').classList.remove('is-open');
+    document.getElementById('trackerPickerSheet').classList.remove('is-open');
+    document.getElementById('trackerPickerBackdrop').setAttribute('aria-hidden', 'true');
+    document.getElementById('trackerSwitchBtn').setAttribute('aria-expanded', 'false');
+  }
+
+  function openTrackerPicker() {
+    closeTrackerForm();
+    renderTrackerList();
+    document.getElementById('trackerPickerBackdrop').classList.add('is-open');
+    document.getElementById('trackerPickerSheet').classList.add('is-open');
+    document.getElementById('trackerPickerBackdrop').setAttribute('aria-hidden', 'false');
+    document.getElementById('trackerSwitchBtn').setAttribute('aria-expanded', 'true');
+  }
+
+  function renderTrackerList() {
+    const state = loadAppState();
+    const wrap = document.getElementById('trackerListWrap');
+    wrap.innerHTML = state.trackers
+      .map(function (tr) {
+        const active = tr.id === state.activeTrackerId;
+        return (
+          '<div class="tracker-row' +
+          (active ? ' is-active' : '') +
+          '" data-id="' +
+          tr.id +
+          '">' +
+          '<button type="button" class="tracker-row-main" data-switch="' +
+          tr.id +
+          '">' +
+          '<span class="tracker-row-emoji">' +
+          (tr.emoji || '📝') +
+          '</span>' +
+          '<span class="tracker-row-name">' +
+          escapeHtml(tr.name) +
+          '</span>' +
+          '</button>' +
+          '<button type="button" class="tracker-row-edit" data-edit="' +
+          tr.id +
+          '" aria-label="编辑">✎</button>' +
+          '</div>'
+        );
+      })
+      .join('');
+
+    wrap.querySelectorAll('[data-switch]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const id = btn.getAttribute('data-switch');
+        const st = loadAppState();
+        st.activeTrackerId = id;
+        saveAppState(st);
+        selectedCalendarDate = null;
+        closeTrackerPicker();
+        renderTrackerHeader();
+        renderToday();
+        renderCalendar();
+      });
+    });
+    wrap.querySelectorAll('[data-edit]').forEach(function (btn) {
+      btn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        const id = btn.getAttribute('data-edit');
+        closeTrackerPicker();
+        openTrackerForm(id);
+      });
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function closeTrackerForm() {
+    document.getElementById('trackerFormBackdrop').classList.remove('is-open');
+    document.getElementById('trackerFormSheet').classList.remove('is-open');
+    document.getElementById('trackerFormBackdrop').setAttribute('aria-hidden', 'true');
+    formEditId = null;
+  }
+
+  function renderIconPicker(selectedId) {
+    const grid = document.getElementById('iconPickerGrid');
+    grid.innerHTML = Object.keys(ICON_LIBRARY)
+      .map(function (id) {
+        const meta = ICON_LIBRARY[id];
+        const sel = id === selectedId ? ' selected' : '';
+        const inner =
+          meta.kind === 'poop' || id === 'poop'
+            ? POOP_SVG_INNER
+            : '<svg viewBox="0 0 24 24">' + meta.path + '</svg>';
+        return (
+          '<button type="button" class="icon-pick-btn' +
+          sel +
+          '" data-icon="' +
+          id +
+          '" style="color:' +
+          meta.color +
+          '" aria-label="' +
+          escapeHtml(meta.label) +
+          '" title="' +
+          escapeHtml(meta.label) +
+          '">' +
+          inner +
+          '</button>'
+        );
+      })
+      .join('');
+
+    grid.querySelectorAll('.icon-pick-btn').forEach(function (b) {
+      b.addEventListener('click', function () {
+        formSelectedIconId = b.getAttribute('data-icon');
+        grid.querySelectorAll('.icon-pick-btn').forEach(function (x) {
+          x.classList.toggle('selected', x === b);
+        });
+      });
+    });
+  }
+
+  function openTrackerForm(editId) {
+    closeTrackerPicker();
+    closeBackfillSheet();
+    formEditId = editId || null;
+    const state = loadAppState();
+    const delBtn = document.getElementById('trackerFormDelete');
+    if (formEditId) {
+      const tr = state.trackers.find(function (x) {
+        return x.id === formEditId;
+      });
+      document.getElementById('trackerFormTitle').textContent = '编辑事项';
+      document.getElementById('trackerNameInput').value = tr ? tr.name : '';
+      document.getElementById('trackerEmojiInput').value = tr ? tr.emoji : '';
+      formSelectedIconId = (tr && tr.iconId) || 'poop';
+      delBtn.hidden = state.trackers.length <= 1;
+    } else {
+      document.getElementById('trackerFormTitle').textContent = '添加事项';
+      document.getElementById('trackerNameInput').value = '';
+      document.getElementById('trackerEmojiInput').value = '';
+      formSelectedIconId = 'moon';
+      delBtn.hidden = true;
+    }
+    renderIconPicker(formSelectedIconId);
+    document.getElementById('trackerFormBackdrop').classList.add('is-open');
+    document.getElementById('trackerFormSheet').classList.add('is-open');
+    document.getElementById('trackerFormBackdrop').setAttribute('aria-hidden', 'false');
+  }
+
+  function saveTrackerForm() {
+    const name = document.getElementById('trackerNameInput').value.trim();
+    let emoji = document.getElementById('trackerEmojiInput').value.trim();
+    if (!name) {
+      alert('请填写事项名称');
+      return;
+    }
+    if (!emoji) emoji = '📝';
+    const iconId = formSelectedIconId in ICON_LIBRARY ? formSelectedIconId : 'poop';
+
+    const state = loadAppState();
+    if (formEditId) {
+      const tr = state.trackers.find(function (x) {
+        return x.id === formEditId;
+      });
+      if (tr) {
+        tr.name = name;
+        tr.emoji = emoji;
+        tr.iconId = iconId;
+      }
+    } else {
+      state.trackers.push({
+        id: genTrackerId(),
+        name: name,
+        emoji: emoji,
+        iconId: iconId,
+      });
+      state.activeTrackerId = state.trackers[state.trackers.length - 1].id;
+    }
+    saveAppState(state);
+    closeTrackerForm();
+    renderTrackerHeader();
+    selectedCalendarDate = null;
+    renderToday();
+    renderCalendar();
+  }
+
+  function deleteTrackerForm() {
+    if (!formEditId) return;
+    const state = loadAppState();
+    if (state.trackers.length <= 1) return;
+    if (!confirm('删除该事项将同时删除其所有记录，确定吗？')) return;
+    state.trackers = state.trackers.filter(function (x) {
+      return x.id !== formEditId;
+    });
+    delete state.records[formEditId];
+    if (state.activeTrackerId === formEditId) {
+      state.activeTrackerId = state.trackers[0].id;
+    }
+    saveAppState(state);
+    closeTrackerForm();
+    renderTrackerHeader();
+    selectedCalendarDate = null;
+    renderToday();
+    renderCalendar();
+  }
+
+  function setSelectMode(on) {
+    recordSelectMode = !!on;
+    selectedIndices = new Set();
+    if (!on) recordSelectTargetDate = null;
+    const bar = document.getElementById('deleteBar');
+    const body = document.body;
+    if (recordSelectMode) {
+      bar.hidden = false;
+      body.classList.add('select-active');
+    } else {
+      bar.hidden = true;
+      body.classList.remove('select-active');
+    }
+    updateDeleteButton();
+    renderToday();
+    const calView = document.getElementById('calendarView');
+    if (selectedCalendarDate && calView && calView.style.display !== 'none') {
+      showDayDetail(selectedCalendarDate);
+    }
+  }
+
+  function updateDeleteButton() {
+    const btn = document.getElementById('deleteConfirm');
+    btn.disabled = selectedIndices.size === 0;
+  }
+
+  function wireRecordRows(container, targetDate, rerender) {
+    if (!container) return;
+    container.querySelectorAll('.record-row').forEach(function (row) {
+      const idx = parseInt(row.dataset.index, 10);
+      function toggleSelect() {
+        if (!recordSelectMode) return;
+        if (selectedIndices.has(idx)) selectedIndices.delete(idx);
+        else selectedIndices.add(idx);
+        row.classList.toggle('selected', selectedIndices.has(idx));
+        updateDeleteButton();
+      }
+      row.addEventListener('click', function () {
+        if (Date.now() < suppressRowClicksUntil) return;
+        toggleSelect();
+      });
+      row.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        if (!recordSelectMode) {
+          suppressRowClicksUntil = Date.now() + 380;
+          recordSelectTargetDate = targetDate;
+          selectedIndices = new Set([idx]);
+          recordSelectMode = true;
+          document.getElementById('deleteBar').hidden = false;
+          document.body.classList.add('select-active');
+          updateDeleteButton();
+          rerender();
+        }
+      });
+    });
+
+    container.querySelectorAll('.record-row').forEach(function (row) {
+      const idx = parseInt(row.dataset.index, 10);
+      function start() {
+        if (recordSelectMode) return;
+        pointerDownEl = row;
+        clearTimeout(longPressTimer);
+        longPressTimer = setTimeout(function () {
+          if (pointerDownEl !== row) return;
+          suppressRowClicksUntil = Date.now() + 380;
+          recordSelectTargetDate = targetDate;
+          recordSelectMode = true;
+          selectedIndices = new Set([idx]);
+          document.getElementById('deleteBar').hidden = false;
+          document.body.classList.add('select-active');
+          updateDeleteButton();
+          rerender();
+          if (navigator.vibrate) navigator.vibrate(20);
+        }, LONG_PRESS_MS);
+      }
+      function end() {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+        pointerDownEl = null;
+      }
+      function cancel() {
+        clearTimeout(longPressTimer);
+        longPressTimer = null;
+        pointerDownEl = null;
+      }
+
+      row.addEventListener('touchstart', start, { passive: true });
+      row.addEventListener('touchend', end);
+      row.addEventListener('touchcancel', cancel);
+      row.addEventListener('mousedown', start);
+      row.addEventListener('mouseup', end);
+      row.addEventListener('mouseleave', cancel);
+    });
+  }
+
+  function applyTodayHead(tracker, count) {
+    const u = todayHeadUI(tracker, count);
+    document.getElementById('statusLine').textContent = u.title;
+    document.getElementById('heroEmoji').textContent = u.face;
+    const badge = document.getElementById('heroBadge');
+    if (u.badge) {
+      badge.textContent = u.badge;
+      badge.hidden = false;
+    } else {
+      badge.hidden = true;
+    }
+    document.getElementById('poopBtn').textContent = u.btn;
+  }
+
+  function renderToday() {
+    const today = todayStr();
+    const state = loadAppState();
+    const tracker = getActiveTracker(state);
+    const data = getTrackerRecords(state, tracker.id);
+    if (!data[today]) data[today] = { count: 0, times: [] };
+    const rec = data[today];
+    if (!Array.isArray(rec.times)) rec.times = [];
+    rec.count = rec.times.length;
+    saveAppState(state);
+
+    document.getElementById('todayDate').textContent = formatTodayLabel();
+    applyTodayHead(tracker, rec.count);
+
+    const section = document.getElementById('recordsSection');
+    const card = document.getElementById('recordsCard');
+
+    if (rec.times.length === 0) {
+      section.hidden = true;
+      card.innerHTML = '';
+      return;
+    }
+
+    section.hidden = false;
+    const rev = rec.times.slice().reverse();
+    card.innerHTML = rev
+      .map(function (t, i) {
+        const origIndex = rec.times.length - 1 - i;
+        const n = origIndex + 1;
+        const sm =
+          recordSelectMode && recordSelectTargetDate === today ? ' select-mode-active' : '';
+        const selC = sm && selectedIndices.has(origIndex) ? ' selected' : '';
+        return (
+          '<div class="record-row row-enter' +
+          sm +
+          selC +
+          '" data-index="' +
+          origIndex +
+          '">' +
+          '<span class="record-check" aria-hidden="true"></span>' +
+          '<div class="record-main">' +
+          '<span class="record-time">' +
+          t +
+          '</span>' +
+          '<span class="record-sub">第 ' +
+          n +
+          ' 次</span>' +
+          '</div></div>'
+        );
+      })
+      .join('');
+
+    wireRecordRows(card, today, renderToday);
+  }
+
+  document.getElementById('poopBtn').addEventListener('click', function () {
+    const today = todayStr();
+    const state = loadAppState();
+    const tracker = getActiveTracker(state);
+    const data = getTrackerRecords(state, tracker.id);
+    if (!data[today]) data[today] = { count: 0, times: [] };
+    data[today].times.push(timeStr());
+    data[today].count = data[today].times.length;
+    saveAppState(state);
+    renderToday();
+    if (navigator.vibrate) navigator.vibrate(15);
+  });
+
+  document.getElementById('deleteCancel').addEventListener('click', function () {
+    setSelectMode(false);
+  });
+
+  document.getElementById('deleteConfirm').addEventListener('click', function () {
+    if (selectedIndices.size === 0 || !recordSelectTargetDate) return;
+    const key = recordSelectTargetDate;
+    const state = loadAppState();
+    const tracker = getActiveTracker(state);
+    const data = getTrackerRecords(state, tracker.id);
+    const rec = data[key];
+    if (!rec || !rec.times) return;
+    const keep = rec.times.filter(function (_, i) {
+      return !selectedIndices.has(i);
+    });
+    rec.times = keep;
+    rec.count = rec.times.length;
+    saveAppState(state);
+    setSelectMode(false);
+    renderCalendar();
+    if (navigator.vibrate) navigator.vibrate(12);
+  });
+
+  function switchTab(tab) {
+    closeBackfillSheet();
+    closeTrackerPicker();
+    closeTrackerForm();
+    setSelectMode(false);
+    document.getElementById('todayView').style.display = tab === 'today' ? 'block' : 'none';
+    document.getElementById('calendarView').style.display = tab === 'cal' ? 'block' : 'none';
+    document.getElementById('navToday').classList.toggle('active', tab === 'today');
+    document.getElementById('navCal').classList.toggle('active', tab === 'cal');
+    if (tab === 'cal') renderCalendar();
+  }
+
+  document.getElementById('navToday').addEventListener('click', function () {
+    switchTab('today');
+  });
+  document.getElementById('navCal').addEventListener('click', function () {
+    switchTab('cal');
+  });
+
+  document.getElementById('trackerSwitchBtn').addEventListener('click', function () {
+    openTrackerPicker();
+  });
+  document.getElementById('trackerPickerBackdrop').addEventListener('click', closeTrackerPicker);
+  document.getElementById('addTrackerOpenBtn').addEventListener('click', function () {
+    closeTrackerPicker();
+    openTrackerForm(null);
+  });
+  document.getElementById('trackerFormBackdrop').addEventListener('click', closeTrackerForm);
+  document.getElementById('trackerFormCancel').addEventListener('click', closeTrackerForm);
+  document.getElementById('trackerFormSave').addEventListener('click', saveTrackerForm);
+  document.getElementById('trackerFormDelete').addEventListener('click', deleteTrackerForm);
+
+  function renderCalendar() {
+    const state = loadAppState();
+    const tracker = getActiveTracker(state);
+    const data = getTrackerRecords(state, tracker.id);
+    const now = new Date();
+    if (currentYear === undefined) {
+      currentYear = now.getFullYear();
+      currentMonth = now.getMonth();
+    }
+    document.getElementById('calMonth').textContent = currentYear + '年' + (currentMonth + 1) + '月';
+    const grid = document.getElementById('calGrid');
+    const names = ['日', '一', '二', '三', '四', '五', '六'];
+    let html = names.map(function (n) {
+      return '<div class="day-name">' + n + '</div>';
+    }).join('');
+
+    const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const today = todayStr();
+    const markSvg = calDayIconMarkup(tracker.iconId || 'poop');
+
+    for (let i = 0; i < firstDay; i++) html += '<div class="day empty"></div>';
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds =
+        currentYear +
+        '-' +
+        String(currentMonth + 1).padStart(2, '0') +
+        '-' +
+        String(d).padStart(2, '0');
+      const isToday = ds === today;
+      const row = data[ds];
+      const hasPoop = row && row.times && row.times.length > 0;
+      const poopEl = hasPoop ? markSvg : '';
+      html +=
+        '<div class="day' +
+        (isToday ? ' today' : '') +
+        (hasPoop ? ' has-poop' : '') +
+        '" data-date="' +
+        ds +
+        '">' +
+        poopEl +
+        '<span class="d-num">' +
+        d +
+        '</span>' +
+        '</div>';
+    }
+    grid.innerHTML = html;
+
+    grid.querySelectorAll('.day:not(.empty)').forEach(function (el) {
+      el.addEventListener('click', function () {
+        showDayDetail(el.dataset.date);
+      });
+    });
+
+    const detail = document.getElementById('calDetail');
+    const [tty, ttm] = today.split('-').map(Number);
+    if (!selectedCalendarDate && currentYear === tty && currentMonth === ttm - 1) {
+      selectedCalendarDate = today;
+    }
+
+    if (selectedCalendarDate) {
+      const still = grid.querySelector('.day[data-date="' + selectedCalendarDate + '"]');
+      if (still) {
+        still.classList.add('selected');
+        detail.classList.add('visible');
+        showDayDetail(selectedCalendarDate);
+      } else {
+        selectedCalendarDate = null;
+        detail.classList.remove('visible');
+      }
+    } else {
+      detail.classList.remove('visible');
+    }
+  }
+
+  function calDetailLabel(ds) {
+    const [y, m, d] = ds.split('-').map(Number);
+    const dt = new Date(y, m - 1, d);
+    const w = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][dt.getDay()];
+    return w + ' · ' + m + '月' + d + '日';
+  }
+
+  function detailEmptyCopy(tracker, ds, today) {
+    if (isDefaultPoopTracker(tracker)) {
+      if (ds > today) return '鲁迅说过：人不能拉未来的💩';
+      if (ds === today) return '今天还没拉';
+      return '这天没拉 😢';
+    }
+    if (ds > today) return '还不能记录这一天哦';
+    if (ds === today) return '今天还没有记录';
+    return '这天还没有记录';
+  }
+
+  function detailSummaryLine(tracker, n) {
+    if (isDefaultPoopTracker(tracker)) {
+      return '💩拉了' + n + '次';
+    }
+    return (tracker.emoji || '📝') + ' 共 ' + n + ' 次';
+  }
+
+  function showDayDetail(ds) {
+    selectedCalendarDate = ds;
+    const state = loadAppState();
+    const tracker = getActiveTracker(state);
+    const data = getTrackerRecords(state, tracker.id);
+    const rec = data[ds];
+    const detail = document.getElementById('calDetail');
+    document.getElementById('detailDate').textContent = calDetailLabel(ds);
+    const body = document.getElementById('detailBody');
+
+    const times = rec && rec.times ? rec.times : [];
+    const today = todayStr();
+
+    if (times.length === 0) {
+      body.innerHTML = '<div class="d-empty">' + detailEmptyCopy(tracker, ds, today) + '</div>';
+    } else {
+      let h = '<div class="d-line cal-detail-summary">' + detailSummaryLine(tracker, times.length) + '</div>';
+      h += '<div class="records-card cal-detail-records" id="detailRecordsCard">';
+      const rev = times.slice().reverse();
+      rev.forEach(function (t, i) {
+        const origIndex = times.length - 1 - i;
+        const n = origIndex + 1;
+        const sm =
+          recordSelectMode && recordSelectTargetDate === ds ? ' select-mode-active' : '';
+        const selC = sm && selectedIndices.has(origIndex) ? ' selected' : '';
+        h +=
+          '<div class="record-row row-enter' +
+          sm +
+          selC +
+          '" data-index="' +
+          origIndex +
+          '">' +
+          '<span class="record-check" aria-hidden="true"></span>' +
+          '<div class="record-main">' +
+          '<span class="record-time">' +
+          t +
+          '</span>' +
+          '<span class="record-sub">第 ' +
+          n +
+          ' 次</span>' +
+          '</div></div>';
+      });
+      h += '</div>';
+      body.innerHTML = h;
+      wireRecordRows(document.getElementById('detailRecordsCard'), ds, function () {
+        showDayDetail(ds);
+      });
+    }
+
+    const footer = document.getElementById('detailFooter');
+    if (isPastDate(ds)) {
+      footer.hidden = false;
+      footer.innerHTML =
+        '<button type="button" class="backfill-btn">' +
+        (isDefaultPoopTracker(tracker) ? '补拉' : '补记') +
+        '</button>';
+    } else {
+      footer.hidden = true;
+      footer.innerHTML = '';
+    }
+
+    detail.classList.add('visible');
+    document.querySelectorAll('.cal-grid .day.selected').forEach(function (el) {
+      el.classList.remove('selected');
+    });
+    const target = document.querySelector('.cal-grid .day[data-date="' + ds + '"]');
+    if (target) target.classList.add('selected');
+  }
+
+  document.getElementById('calDetail').addEventListener('click', function (e) {
+    if (!e.target.classList.contains('backfill-btn')) return;
+    if (!selectedCalendarDate || !isPastDate(selectedCalendarDate)) return;
+    openBackfillSheet();
+  });
+
+  document.getElementById('backfillBackdrop').addEventListener('click', closeBackfillSheet);
+  document.getElementById('backfillCancel').addEventListener('click', closeBackfillSheet);
+  document.getElementById('backfillConfirm').addEventListener('click', function () {
+    const ds = selectedCalendarDate;
+    if (!ds || !isPastDate(ds)) {
+      closeBackfillSheet();
+      return;
+    }
+    let raw = document.getElementById('backfillTime').value;
+    if (!raw) raw = '10:00';
+    const t = raw.length >= 5 ? raw.slice(0, 5) : '10:00';
+    const state = loadAppState();
+    const tracker = getActiveTracker(state);
+    const data = getTrackerRecords(state, tracker.id);
+    if (!data[ds]) data[ds] = { count: 0, times: [] };
+    if (!Array.isArray(data[ds].times)) data[ds].times = [];
+    data[ds].times.push(t);
+    data[ds].count = data[ds].times.length;
+    saveAppState(state);
+    closeBackfillSheet();
+    showDayDetail(ds);
+    renderCalendar();
+  });
+
+  document.getElementById('prevMonth').addEventListener('click', function () {
+    closeBackfillSheet();
+    closeTrackerPicker();
+    closeTrackerForm();
+    setSelectMode(false);
+    currentMonth--;
+    if (currentMonth < 0) {
+      currentMonth = 11;
+      currentYear--;
+    }
+    selectedCalendarDate = null;
+    renderCalendar();
+  });
+  document.getElementById('nextMonth').addEventListener('click', function () {
+    closeBackfillSheet();
+    closeTrackerPicker();
+    closeTrackerForm();
+    setSelectMode(false);
+    currentMonth++;
+    if (currentMonth > 11) {
+      currentMonth = 0;
+      currentYear++;
+    }
+    selectedCalendarDate = null;
+    renderCalendar();
+  });
+
+  renderTrackerHeader();
+  renderToday();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+})();
+
+</script>
 </body>
 </html>
